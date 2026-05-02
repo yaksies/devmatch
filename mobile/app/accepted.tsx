@@ -1,8 +1,10 @@
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { supabase } from "@/lib/supabase";
+import { SectionBackButton } from "@/components/SectionBackButton";
 
 export default function AcceptedScreen() {
   const [items, setItems] = useState<any[] | null>(null);
@@ -49,35 +51,39 @@ export default function AcceptedScreen() {
   }, []);
 
   return (
-    <ScrollView contentContainerStyle={styles.scroll} style={styles.root}>
-      <Text style={styles.title}>People you accepted</Text>
-      <Text style={styles.sub}>People you swiped right on.</Text>
+    <SafeAreaView style={styles.root} edges={["top"]}>
+      <ScrollView contentContainerStyle={styles.scroll} style={styles.root}>
+        <SectionBackButton style={styles.backButton} />
+        <Text style={styles.title}>People you accepted</Text>
+        <Text style={styles.sub}>People you swiped right on.</Text>
 
-      {loading ? (
-        <ActivityIndicator style={{ marginTop: 24 }} />
-      ) : items && items.length > 0 ? (
-        items.map((row: any) => {
-          const profile = row.profiles ?? { display_name: "Unknown", headline: "" };
-          return (
-            <Pressable key={row.target_id} style={styles.card} onPress={() => router.push({ pathname: "/user/[id]", params: { id: row.target_id, from: "accepted" } })}>
-              <Text style={styles.name}>{profile.display_name}</Text>
-              {profile.headline ? <Text style={styles.headline}>{profile.headline}</Text> : null}
-            </Pressable>
-          );
-        })
-      ) : (
-        <View style={styles.blank}>
-          <Text style={styles.blankTitle}>There&apos;s nothing to be seen here...</Text>
-          <Text style={styles.blankSub}>No accepted people yet.</Text>
-        </View>
-      )}
-    </ScrollView>
+        {loading ? (
+          <ActivityIndicator style={{ marginTop: 24 }} />
+        ) : items && items.length > 0 ? (
+          items.map((row: any) => {
+            const profile = row.profiles ?? { display_name: "Unknown", headline: "" };
+            return (
+              <Pressable key={row.target_id} style={styles.card} onPress={() => router.push({ pathname: "/user/[id]", params: { id: row.target_id, from: "accepted" } })}>
+                <Text style={styles.name}>{profile.display_name}</Text>
+                {profile.headline ? <Text style={styles.headline}>{profile.headline}</Text> : null}
+              </Pressable>
+            );
+          })
+        ) : (
+          <View style={styles.blank}>
+            <Text style={styles.blankTitle}>There&apos;s nothing to be seen here...</Text>
+            <Text style={styles.blankSub}>No accepted people yet.</Text>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0c0c0f" },
   scroll: { padding: 20, gap: 12 },
+  backButton: { marginBottom: 4 },
   title: { color: "#f4f4f5", fontSize: 20, fontWeight: "700" },
   sub: { color: "#a1a1aa", marginTop: 6 },
   card: {

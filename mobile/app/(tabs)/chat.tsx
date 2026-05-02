@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
@@ -78,26 +79,30 @@ export default function ChatScreen() {
 
   if (!isSupabaseConfigured) {
     return (
-      <View style={styles.root}>
-        <View style={styles.panel}>
-          <Text style={styles.panelText}>
-            Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to mobile/.env
-          </Text>
+      <SafeAreaView style={styles.root} edges={["top"]}>
+        <View style={styles.center}>
+          <View style={styles.panel}>
+            <Text style={styles.panelText}>
+              Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to mobile/.env
+            </Text>
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (loading) {
     return (
-      <View style={[styles.root, styles.center]}>
-        <ActivityIndicator color="#c4b5fd" />
-      </View>
+      <SafeAreaView style={styles.root} edges={["top"]}>
+        <View style={styles.center}>
+          <ActivityIndicator color="#c4b5fd" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.root}>
+    <SafeAreaView style={styles.root} edges={["top"]}>
       {chats.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.emptyTitle}>No matches yet</Text>
@@ -125,7 +130,7 @@ export default function ChatScreen() {
           )}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

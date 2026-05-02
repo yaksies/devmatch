@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { DiscoverDeck } from "@/components/DiscoverDeck";
 import { EventsFeed } from "@/components/EventsFeed";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import type { HackathonProfile } from "@devmatch/shared";
 
@@ -15,7 +16,7 @@ export default function DiscoverScreen() {
         setLoading(false);
         return;
       }
-      
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setLoading(false);
@@ -27,14 +28,14 @@ export default function DiscoverScreen() {
         .from("swipes")
         .select("target_id")
         .eq("swiper_id", user.id);
-        
+
       const swipedIds = new Set((swipes || []).map((s) => s.target_id));
       swipedIds.add(user.id);
 
       const { data: allProfiles } = await supabase
         .from("profiles")
         .select("*");
-        
+
       const loadedProfiles: HackathonProfile[] = (allProfiles || [])
         .filter((p) => !swipedIds.has(p.id))
         .map((p) => ({
@@ -61,19 +62,18 @@ export default function DiscoverScreen() {
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.scroll}
-      style={styles.root}
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>Find your hackathon crew</Text>
-        <Text style={styles.sub}>
-          Swipe through participants. Mutual likes become matches — then chat.
-        </Text>
-      </View>
-      <DiscoverDeck initialProfiles={profiles} />
-      <EventsFeed />
-    </ScrollView>
+    <SafeAreaView style={styles.root} edges={["top"]}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Find your hackathon crew</Text>
+          <Text style={styles.sub}>
+            Swipe through participants. Mutual likes become matches — then chat.
+          </Text>
+        </View>
+        <DiscoverDeck initialProfiles={profiles} />
+        <EventsFeed />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
