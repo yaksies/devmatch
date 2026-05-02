@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { ChatTimeline } from "./chat-timeline";
+import { ChatTimeline, ChatTimelineHandle } from "./chat-timeline";
 import { ChatMessageBox } from "@/components/ChatMessageBox";
 
 type MessageRow = {
@@ -19,22 +19,21 @@ type Props = {
 };
 
 export function ChatPanel({ roomId, currentUserId, initialMessages }: Props) {
-    const addMessageRef = useRef<((msg: MessageRow) => void) | null>(null);
+    const timelineRef = useRef<ChatTimelineHandle | null>(null);
 
     return (
-        <>
+        <div className="flex h-full flex-col overflow-hidden">
             <ChatTimeline
-                key={roomId}
+                ref={timelineRef}
                 roomId={roomId}
                 currentUserId={currentUserId}
                 initialMessages={initialMessages}
-                onReady={(fn) => { addMessageRef.current = fn; }}
             />
             <ChatMessageBox
                 roomId={roomId}
                 currentUserId={currentUserId}
-                onMessageSent={(msg) => addMessageRef.current?.(msg)}
+                onMessageSent={(msg) => timelineRef.current?.addMessage(msg)}
             />
-        </>
+        </div>
     );
 }
