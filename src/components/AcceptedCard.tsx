@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { deleteSwipe } from "@/app/notifications/actions";
 
 type Profile = {
   id: string;
@@ -17,23 +17,8 @@ export function AcceptedCard({ profile, isMatched }: { profile: Profile; isMatch
 
   const handleRetake = async () => {
     setIsHidden(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { error } = await supabase
-      .from("swipes")
-      .delete()
-      .eq("swiper_id", user.id)
-      .eq("target_id", profile.id);
-
-    if (!error) {
-      // Refresh the page to update the list
-      router.refresh();
-    } else {
-      // If deletion failed, show the card again
-      setIsHidden(false);
-    }
+    await deleteSwipe(profile.id);
+    router.refresh();
   };
 
   if (isHidden) return null;

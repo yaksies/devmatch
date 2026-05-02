@@ -180,6 +180,7 @@ const styles = StyleSheet.create({
   tagText: { color: "#f4f4f5", fontSize: 13 },
   interests: { marginTop: 12, color: "#e4e4e7", fontSize: 14, lineHeight: 20 },
   buttonRow: { marginTop: 18, gap: 10 },
+  loadingButtons: { marginTop: 18, alignItems: "center" },
   accept: {
     backgroundColor: "#10b981",
     paddingVertical: 12,

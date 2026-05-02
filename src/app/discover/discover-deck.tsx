@@ -150,7 +150,7 @@ export function DiscoverDeck({ initialProfiles }: Props) {
 
   return (
     <div
-      className="w-full max-w-2xl px-2 sm:px-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 sm:p-4 shadow-lg shadow-black/20"
+      className="w-full max-w-xs px-2 sm:px-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 sm:p-3 shadow-lg shadow-black/20"
       onWheel={(event) => {
         if (Math.abs(event.deltaX) < Math.abs(event.deltaY)) return;
         event.preventDefault();
@@ -178,7 +178,7 @@ export function DiscoverDeck({ initialProfiles }: Props) {
 
         <article
           style={nextCardStyle}
-          className="absolute inset-x-2 sm:inset-x-4 bottom-2 sm:bottom-4 rounded-xl sm:rounded-2xl border border-white/10 bg-[#17171b] p-3 sm:p-5 shadow-xl"
+          className="absolute inset-x-2 sm:inset-x-4 bottom-2 sm:bottom-4 rounded-xl sm:rounded-2xl border border-white/10 bg-[#17171b] p-4 sm:p-6 shadow-xl"
         >
           <p className="text-xs font-medium uppercase tracking-wider text-[var(--muted)]">
             Up next
@@ -193,7 +193,7 @@ export function DiscoverDeck({ initialProfiles }: Props) {
 
         <article
           style={cardStyle}
-          className="absolute inset-x-2 sm:inset-x-4 bottom-2 sm:bottom-4 relative rounded-xl sm:rounded-2xl border border-white/15 bg-[#1f1f25] p-4 sm:p-6 shadow-2xl"
+          className="absolute inset-x-2 sm:inset-x-4 bottom-2 sm:bottom-4 rounded-xl sm:rounded-2xl border border-white/15 bg-[#1f1f25] p-5 sm:p-6 shadow-2xl"
           onPointerDown={(event) => {
             if (event.button !== 0 && event.pointerType === "mouse") return;
             event.currentTarget.setPointerCapture(event.pointerId);
@@ -226,24 +226,24 @@ export function DiscoverDeck({ initialProfiles }: Props) {
           <p className="text-xs font-medium uppercase tracking-wider text-[var(--muted)]">
             Looking for teammates
           </p>
-          <h2 className="mt-1 text-2xl font-semibold text-[var(--foreground)]">
+          <h2 className="mt-2 text-3xl font-semibold text-[var(--foreground)]">
             {current.displayName}
           </h2>
           {current.headline ? (
-            <p className="mt-2 text-sm text-[var(--muted)]">{current.headline}</p>
+            <p className="mt-3 text-base text-[var(--muted)]">{current.headline}</p>
           ) : null}
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-5 flex flex-wrap gap-2">
             {current.techStack.map((tag) => (
               <span
                 key={tag}
-                className="rounded-full bg-[var(--muted-bg)] px-3 py-1 text-xs font-medium text-[var(--foreground)]"
+                className="rounded-full bg-[var(--muted-bg)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)]"
               >
                 {tag}
               </span>
             ))}
           </div>
           {current.interests ? (
-            <p className="mt-4 text-sm leading-relaxed text-[var(--foreground)]">
+            <p className="mt-5 text-sm leading-relaxed text-[var(--foreground)]">
               {current.interests}
             </p>
           ) : null}

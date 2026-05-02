@@ -62,6 +62,7 @@ export default function ChatRoomScreen() {
         .subscribe();
 
       return () => {
+        if (!supabase) return;
         void supabase.removeChannel(channel);
       };
     }

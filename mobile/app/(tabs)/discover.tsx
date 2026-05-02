@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { DiscoverDeck } from "@/components/DiscoverDeck";
+import { EventsFeed } from "@/components/EventsFeed";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { supabase } from "@/lib/supabase";
 import type { HackathonProfile } from "@devmatch/shared";
@@ -71,6 +72,7 @@ export default function DiscoverScreen() {
         </Text>
       </View>
       <DiscoverDeck initialProfiles={profiles} />
+      <EventsFeed />
     </ScrollView>
   );
 }

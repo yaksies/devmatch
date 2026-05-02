@@ -30,3 +30,6 @@ export const mockDiscoverDeck: HackathonProfile[] = [
     interests: "B2B hacks, user interviews between commits.",
   },
 ];
+
+export type { ScrapedEvent } from "./events";
+export { scrapeHackathonEvents } from "./events";
