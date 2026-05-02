@@ -135,4 +135,4 @@ create policy "Match members can send messages"
   );
 
 -- Realtime: enable replication for chat_messages in Dashboard → Database → Replication, or:
--- alter publication supabase_realtime add table public.chat_messages;
+alter publication supabase_realtime add table public.chat_messages;

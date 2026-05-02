@@ -1,8 +1,64 @@
+import { useEffect, useState } from "react";
 import { DiscoverDeck } from "@/components/DiscoverDeck";
-import { mockDiscoverDeck } from "@devmatch/shared";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { supabase } from "@/lib/supabase";
+import type { HackathonProfile } from "@devmatch/shared";
 
 export default function DiscoverScreen() {
+  const [profiles, setProfiles] = useState<HackathonProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProfiles() {
+      if (!supabase) {
+        setLoading(false);
+        return;
+      }
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      // Fetch swipes by this user to exclude them from the deck
+      const { data: swipes } = await supabase
+        .from("swipes")
+        .select("target_id")
+        .eq("swiper_id", user.id);
+        
+      const swipedIds = new Set((swipes || []).map((s) => s.target_id));
+      swipedIds.add(user.id);
+
+      const { data: allProfiles } = await supabase
+        .from("profiles")
+        .select("*");
+        
+      const loadedProfiles: HackathonProfile[] = (allProfiles || [])
+        .filter((p) => !swipedIds.has(p.id))
+        .map((p) => ({
+          id: p.id,
+          displayName: p.display_name,
+          headline: p.headline || "",
+          techStack: p.tech_stack || [],
+          interests: p.interests || "",
+        }));
+
+      setProfiles(loadedProfiles);
+      setLoading(false);
+    }
+
+    loadProfiles();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={[styles.root, { justifyContent: "center", alignItems: "center" }]}>
+        <Text style={{ color: "#a1a1aa" }}>Loading profiles...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       contentContainerStyle={styles.scroll}
@@ -14,7 +70,7 @@ export default function DiscoverScreen() {
           Swipe through participants. Mutual likes become matches — then chat.
         </Text>
       </View>
-      <DiscoverDeck initialProfiles={mockDiscoverDeck} />
+      <DiscoverDeck initialProfiles={profiles} />
     </ScrollView>
   );
 }
