@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 function parseStack(raw: string): string[] {
   return raw
@@ -9,17 +10,40 @@ function parseStack(raw: string): string[] {
     .filter(Boolean);
 }
 
-export function ProfileForm() {
-  const [displayName, setDisplayName] = useState("");
-  const [headline, setHeadline] = useState("");
-  const [techRaw, setTechRaw] = useState("React, TypeScript, Figma");
-  const [interests, setInterests] = useState("");
-  const [saved, setSaved] = useState(false);
+type ProfileFormProps = {
+  initialProfile?: any;
+};
 
-  function handleSubmit(e: React.FormEvent) {
+export function ProfileForm({ initialProfile }: ProfileFormProps) {
+  const [displayName, setDisplayName] = useState(initialProfile?.display_name || "");
+  const [headline, setHeadline] = useState(initialProfile?.headline || "");
+  const [techRaw, setTechRaw] = useState(
+    initialProfile?.tech_stack?.join(", ") || "React, TypeScript, Figma"
+  );
+  const [interests, setInterests] = useState(initialProfile?.interests || "");
+  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setLoading(true);
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      await supabase.from("profiles").upsert({
+        id: user.id,
+        display_name: displayName,
+        headline,
+        tech_stack: parseStack(techRaw),
+        interests,
+        updated_at: new Date().toISOString(),
+      });
+    }
+
+    setLoading(false);
     setSaved(true);
-    // TODO: upsert into Supabase `profiles` for auth.uid()
     window.setTimeout(() => setSaved(false), 2500);
   }
 
@@ -110,14 +134,15 @@ export function ProfileForm() {
 
       <button
         type="submit"
-        className="rounded-full bg-[var(--accent)] py-3 text-sm font-medium text-[var(--accent-fg)] transition-opacity hover:opacity-90"
+        disabled={loading}
+        className="rounded-full bg-[var(--accent)] py-3 text-sm font-medium text-[var(--accent-fg)] transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        Save profile
+        {loading ? "Saving..." : "Save profile"}
       </button>
 
       {saved ? (
-        <p className="text-center text-xs text-[var(--muted)]">
-          Saved locally — connect Supabase to persist.
+        <p className="text-center text-xs text-[var(--accent)] font-medium">
+          Profile saved successfully!
         </p>
       ) : null}
     </form>

@@ -1,6 +1,22 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "./profile-form";
 
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  // Fetch existing profile
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
       <div className="mb-8 text-center">
@@ -12,7 +28,7 @@ export default function ProfilePage() {
           specific.
         </p>
       </div>
-      <ProfileForm />
+      <ProfileForm initialProfile={profile} />
     </div>
   );
 }

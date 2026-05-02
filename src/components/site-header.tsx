@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { logout } from "@/app/login/actions";
 
 const nav = [
   { href: "/discover", label: "Discover" },
@@ -6,7 +8,10 @@ const nav = [
   { href: "/chat", label: "Chat" },
 ] as const;
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <header className="border-b border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
@@ -26,6 +31,23 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
+          
+          <div className="ml-2 pl-2 border-l border-[var(--border)] flex items-center">
+            {user ? (
+              <form action={logout}>
+                <button className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-[var(--muted)] transition-colors hover:bg-[var(--muted-bg)] hover:text-red-400 sm:px-3">
+                  Log out
+                </button>
+              </form>
+            ) : (
+              <Link
+                href="/login"
+                className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-[var(--accent-fg)] transition-opacity hover:opacity-90"
+              >
+                Log in
+              </Link>
+            )}
+          </div>
         </nav>
       </div>
     </header>

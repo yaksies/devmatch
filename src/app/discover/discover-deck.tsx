@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { HackathonProfile } from "@devmatch/shared";
+import { createClient } from "@/lib/supabase/client";
 
 type Props = {
   initialProfiles: HackathonProfile[];
@@ -14,9 +15,20 @@ export function DiscoverDeck({ initialProfiles }: Props) {
   const current = initialProfiles[index];
 
   const goNext = useCallback(
-    (_direction: "like" | "pass") => {
+    async (direction: "like" | "pass") => {
       if (!current) return;
-      void _direction; // TODO: POST to Supabase `swipes`
+      
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        await supabase.from("swipes").insert({
+          swiper_id: user.id,
+          target_id: current.id,
+          direction,
+        });
+      }
+
       setReviewed((n) => n + 1);
       setIndex((i) => i + 1);
     },
