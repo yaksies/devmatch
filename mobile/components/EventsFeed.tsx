@@ -178,7 +178,7 @@ export function EventsFeed() {
 const styles = StyleSheet.create({
   section: {
     width: "100%",
-    marginTop: 28,
+    marginTop: 36,
   },
   headingRow: {
     alignItems: "center",

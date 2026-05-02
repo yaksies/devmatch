@@ -138,17 +138,24 @@ function parseDateRange(text: string) {
 }
 
 function extractImageUrl(innerHtml: string, baseUrl: string) {
+  // Check inline <img> tags
   const imageMatch = innerHtml.match(/<img\b[^>]*(?:src|data-src)=["']([^"']+)["']/i);
-
-  if (!imageMatch?.[1]) {
-    return undefined;
+  if (imageMatch?.[1]) {
+    try {
+      return new URL(imageMatch[1], baseUrl).toString();
+    } catch {}
   }
 
-  try {
-    return new URL(imageMatch[1], baseUrl).toString();
-  } catch {
-    return undefined;
+  // Check inline style background-image: url(...)
+  const bgMatch = innerHtml.match(/background(?:-image)?\s*:\s*url\(([^)]+)\)/i);
+  if (bgMatch?.[1]) {
+    const cleaned = bgMatch[1].replace(/^["']|["']$/g, "").trim();
+    try {
+      return new URL(cleaned, baseUrl).toString();
+    } catch {}
   }
+
+  return undefined;
 }
 
 async function fetchHtml(url: string) {
@@ -165,7 +172,7 @@ async function fetchHtml(url: string) {
 }
 
 function extractAnchors(html: string, baseUrl: string) {
-  const anchors: Array<{ href: string; text: string; html: string }> = [];
+  const anchors: Array<{ href: string; text: string; html: string; context: string }> = [];
   const matches = [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi)];
 
   for (const match of matches) {
@@ -182,7 +189,10 @@ function extractAnchors(html: string, baseUrl: string) {
       const text = normalizeWhitespace(decodeEntities(innerHtml.replace(/<[^>]+>/g, " ")));
 
       if (text) {
-        anchors.push({ href, text, html: innerHtml });
+        const start = Math.max(0, (match.index ?? 0) - 300);
+        const end = Math.min(html.length, (match.index ?? 0) + match[0].length + 300);
+        const context = html.slice(start, end);
+        anchors.push({ href, text, html: innerHtml, context });
       }
     } catch {
       continue;
@@ -192,7 +202,7 @@ function extractAnchors(html: string, baseUrl: string) {
   return anchors;
 }
 
-function extractMlhCard(anchor: { href: string; text: string; html: string }): ListingCard | null {
+function extractMlhCard(anchor: { href: string; text: string; html: string; context?: string }): ListingCard | null {
   const text = anchor.text.replace(/\bbackground\b/gi, " ");
   const dateMatch = text.match(
     /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+\d{1,2}\s*[-–]\s*(?:\d{1,2}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+\d{1,2})/i,
@@ -220,11 +230,11 @@ function extractMlhCard(anchor: { href: string; text: string; html: string }): L
     url,
     source: "mlh",
     description: cleanedName && cleanedName !== name ? cleanedName : undefined,
-    image: extractImageUrl(anchor.html, anchor.href),
+    image: extractImageUrl(anchor.context || anchor.html, anchor.href),
   };
 }
 
-function extractDevpostCard(anchor: { href: string; text: string; html: string }): ListingCard | null {
+function extractDevpostCard(anchor: { href: string; text: string; html: string; context?: string }): ListingCard | null {
   const text = anchor.text;
   const url = anchor.href;
 
@@ -246,7 +256,7 @@ function extractDevpostCard(anchor: { href: string; text: string; html: string }
     url,
     source: "devpost",
     description: normalizeWhitespace(text.replace(titleMatch?.[1] ?? name, "")).slice(0, 180) || undefined,
-    image: extractImageUrl(anchor.html, anchor.href),
+    image: extractImageUrl(anchor.context || anchor.html, anchor.href),
   };
 }
 
@@ -300,6 +310,43 @@ async function scrapeSource(seed: SourceSeed) {
   }
 }
 
+async function probeImageFromPage(url: string, baseUrl: string) {
+  try {
+    const html = await fetchHtml(url);
+
+    // Look for og:image meta
+    const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
+
+    if (ogMatch?.[1]) {
+      try {
+        return new URL(ogMatch[1], baseUrl).toString();
+      } catch {}
+    }
+
+    // Look for first <img src=> on the page
+    const imgMatch = html.match(/<img\b[^>]*(?:src|data-src)=['"]([^'"\s>]+)['"]/i);
+    if (imgMatch?.[1]) {
+      try {
+        return new URL(imgMatch[1], baseUrl).toString();
+      } catch {}
+    }
+
+    // background-image in inline styles
+    const bgMatch = html.match(/background(?:-image)?\s*:\s*url\(([^)]+)\)/i);
+    if (bgMatch?.[1]) {
+      const cleaned = bgMatch[1].replace(/^["']|["']$/g, "").trim();
+      try {
+        return new URL(cleaned, baseUrl).toString();
+      } catch {}
+    }
+
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function scrapeHackathonEvents() {
   const scraped = await Promise.all(SOURCE_SEEDS.map((seed) => scrapeSource(seed)));
   const deduped = new Map<string, ScrapedEvent>();
@@ -311,6 +358,55 @@ export async function scrapeHackathonEvents() {
     }
   }
 
-  const results = [...deduped.values()];
+  let results = [...deduped.values()];
+
+  // If we have too few results, fall back to more permissive anchors (try to include more)
+  if (results.length < 12) {
+    try {
+      // Try rescanning seeds for additional anchors by grabbing more anchors per page
+      const extra = await Promise.all(
+        SOURCE_SEEDS.map(async (seed) => {
+          const html = await fetchHtml(seed.listingUrl);
+          const anchors = extractAnchors(html, seed.listingUrl);
+          return anchors
+            .slice(0, 72)
+            .filter((a) => isLikelyEventCard(a, seed.source))
+            .map((a) => ({ href: a.href, text: a.text }));
+        }),
+      );
+
+      // flatten and attempt to convert loose anchors into minimal events
+      for (const group of extra.flat()) {
+        const id = `other:${group.href}`;
+        if (!deduped.has(id)) {
+          deduped.set(id, {
+            id,
+            name: titleFromUrl(group.href) || normalizeWhitespace(group.text).slice(0, 60) || "Hackathon",
+            date: "Date coming soon",
+            location: "Location coming soon",
+            source: "other",
+            url: group.href,
+          });
+        }
+      }
+
+      results = [...deduped.values()];
+    } catch {
+      // ignore
+    }
+  }
+
+  // For items missing images, probe their linked page for og:image / img (limit probes)
+  const probeLimit = 36;
+  const toProbe = results.filter((r) => !r.image).slice(0, probeLimit);
+  await Promise.all(
+    toProbe.map(async (r) => {
+      try {
+        const found = await probeImageFromPage(r.url, r.url);
+        if (found) r.image = found;
+      } catch {}
+    }),
+  );
+
   return results.length > 0 ? results : FALLBACK_EVENTS;
 }

@@ -80,8 +80,9 @@ export default function DiscoverScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0c0c0f" },
   scroll: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: 24,
+    paddingTop: 28,
+    paddingBottom: 56,
     alignItems: "center",
   },
   header: { marginBottom: 24, maxWidth: 360 },
