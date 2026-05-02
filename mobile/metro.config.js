@@ -4,10 +4,12 @@ const path = require("path");
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, "..");
 
-/** Resolves `@devmatch/shared` from the repo root in npm workspaces. */
 const config = getDefaultConfig(projectRoot);
 
-config.watchFolders = [monorepoRoot];
+// Merge so we keep Expo’s workspace watch folders (packages/*, etc.).
+const existingWatch = config.watchFolders ?? [];
+config.watchFolders = [...new Set([...existingWatch, monorepoRoot])];
+
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, "node_modules"),
   path.resolve(monorepoRoot, "node_modules"),

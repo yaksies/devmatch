@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:web": "next dev",
-    "dev:mobile": "npm run start -w mobile",
+    "dev:mobile": "cd mobile && npx expo start",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
