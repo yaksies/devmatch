@@ -37,11 +37,15 @@ export default async function UserProfilePage({
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from("profiles")
     .select("id, display_name, headline, tech_stack, interests, discord, email, linkedin, github, projects")
     .eq("id", resolvedParams.id)
     .single();
+
+  if (error && error.code !== "PGRST116") {
+    console.error("Error fetching profile:", error.message, error.details, error.hint);
+  }
 
   const mockProfile = profile ? null : getMockProfile(resolvedParams.id);
 
@@ -107,6 +111,40 @@ export default async function UserProfilePage({
             {resolvedProfile.interests}
           </p>
         ) : null}
+
+        {profile?.projects ? (
+          <div className="mt-8">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Projects & Experience</h2>
+            <p className="mt-2 text-sm leading-7 text-[var(--foreground)]">{profile.projects}</p>
+          </div>
+        ) : null}
+
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {profile?.discord ? (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">Discord</p>
+              <p className="mt-1 text-sm text-[var(--foreground)]">{profile.discord}</p>
+            </div>
+          ) : null}
+          {profile?.email ? (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">Email</p>
+              <p className="mt-1 text-sm text-[var(--foreground)]">{profile.email}</p>
+            </div>
+          ) : null}
+          {profile?.github ? (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">GitHub</p>
+              <p className="mt-1 text-sm text-[var(--foreground)]">{profile.github}</p>
+            </div>
+          ) : null}
+          {profile?.linkedin ? (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">LinkedIn</p>
+              <p className="mt-1 text-sm text-[var(--foreground)]">{profile.linkedin}</p>
+            </div>
+          ) : null}
+        </div>
 
         <div className="mt-8 flex flex-wrap gap-3">
           <ProfileAiInsightButton profileId={resolvedProfile.id} profileName={resolvedProfile.display_name} />

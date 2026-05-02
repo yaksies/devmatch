@@ -49,7 +49,7 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
-      await supabase.from("profiles").upsert({
+      const { error } = await supabase.from("profiles").upsert({
         id: user.id,
         display_name: displayName,
         headline,
@@ -62,11 +62,17 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
         projects,
         updated_at: new Date().toISOString(),
       });
+
+      if (error) {
+        console.error("Error saving profile:", error);
+        alert("Failed to save profile: " + error.message);
+      } else {
+        setSaved(true);
+        window.setTimeout(() => setSaved(false), 2500);
+      }
     }
 
     setLoading(false);
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2500);
   }
 
   const previewTags = parseStack(techRaw);

@@ -73,7 +73,7 @@ export default function UserProfile() {
 
       const { data } = await supabase
         .from("profiles")
-        .select("id,display_name,headline,tech_stack,interests,avatar_url")
+        .select("id,display_name,headline,tech_stack,interests,avatar_url,discord,email,linkedin,github,projects")
         .eq("id", id)
         .maybeSingle();
 
@@ -206,6 +206,28 @@ export default function UserProfile() {
           <Text style={styles.interests}>{profile.interests}</Text>
         ) : null}
 
+        {profile.projects ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Projects & Experience</Text>
+            <Text style={styles.interests}>{profile.projects}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.socialRow}>
+          {profile.github ? (
+            <View style={styles.socialItem}>
+              <Text style={styles.socialLabel}>GitHub</Text>
+              <Text style={styles.socialValue}>{profile.github}</Text>
+            </View>
+          ) : null}
+          {profile.linkedin ? (
+            <View style={styles.socialItem}>
+              <Text style={styles.socialLabel}>LinkedIn</Text>
+              <Text style={styles.socialValue}>{profile.linkedin}</Text>
+            </View>
+          ) : null}
+        </View>
+
         <View style={styles.buttonRow}>
           {canAcceptBack && currentUserId ? (
             <Pressable style={styles.accept} onPress={acceptBack}>
@@ -323,7 +345,12 @@ const styles = StyleSheet.create({
   },
   tagText: { color: "#f4f4f5", fontSize: 13 },
   interests: { marginTop: 12, color: "#e4e4e7", fontSize: 14, lineHeight: 20 },
-  buttonRow: { marginTop: 18, gap: 10 },
+  section: { marginTop: 20 },
+  socialRow: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 20 },
+  socialItem: { flex: 1, minWidth: 140 },
+  socialLabel: { color: "#a1a1aa", fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+  socialValue: { color: "#f4f4f5", fontSize: 13, marginTop: 4 },
+  buttonRow: { marginTop: 24, gap: 10 },
   loadingButtons: { marginTop: 18, alignItems: "center" },
   aiButton: {
     backgroundColor: "rgba(124,58,237,0.16)",

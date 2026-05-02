@@ -5,10 +5,6 @@ import { useState } from "react";
 type Insight = {
   summary: string;
   confidence: "low" | "medium" | "high";
-  strengths: string[];
-  signals: string[];
-  caveats: string[];
-  sources: string[];
   generatedAt: string;
 };
 
@@ -100,52 +96,6 @@ export function ProfileAiInsightButton({ profileId, profileName }: Props) {
                     </span>
                   </div>
                   <p className="mt-3 text-sm leading-7 text-[var(--foreground)]">{insight.summary}</p>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Strengths</p>
-                    <ul className="mt-3 space-y-2 text-sm text-[var(--foreground)]">
-                      {insight.strengths.map((item) => (
-                        <li key={item} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Signals</p>
-                    <ul className="mt-3 space-y-2 text-sm text-[var(--foreground)]">
-                      {insight.signals.map((item) => (
-                        <li key={item} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                {insight.caveats.length > 0 ? (
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Caveats</p>
-                    <ul className="mt-3 space-y-2 text-sm text-[var(--muted)]">
-                      {insight.caveats.map((item) => (
-                        <li key={item} className="rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 leading-6">
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-
-                <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
-                  <span className="rounded-full border border-[var(--border)] px-2.5 py-1">{cached ? "Cached result" : "Fresh analysis"}</span>
-                  {insight.sources.map((source) => (
-                    <span key={source} className="rounded-full border border-[var(--border)] px-2.5 py-1">
-                      {source}
-                    </span>
-                  ))}
                 </div>
               </div>
             ) : null}

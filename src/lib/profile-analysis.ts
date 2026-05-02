@@ -29,18 +29,13 @@ export type GithubProfile = {
   followers: number;
   repos: GithubRepo[];
 };
-
 export type ProfileInsight = {
   summary: string;
   confidence: "low" | "medium" | "high";
-  strengths: string[];
-  signals: string[];
-  caveats: string[];
-  sources: string[];
   generatedAt: string;
 };
 
-const ANALYSIS_VERSION = "2026-05-02-v1";
+const ANALYSIS_VERSION = "2026-05-02-v4";
 
 export function normalizeGithubUsername(value: string | null | undefined) {
   if (!value) return null;
@@ -109,25 +104,6 @@ function buildFallbackInsight(profile: ReturnType<typeof normalizeProfile>, gith
   return {
     summary: summaryParts.join(" "),
     confidence: fallbackConfidence(profile, github),
-    strengths: [
-      ...(techs.length ? ["Clear technical stack"] : []),
-      ...(profile.projects ? ["Provided extra project context"] : []),
-      ...(github?.repos.length ? ["Public GitHub activity available"] : []),
-    ],
-    signals: [
-      ...(profile.interests ? [profile.interests] : []),
-      ...(profile.linkedin ? ["LinkedIn link shared"] : []),
-      ...(profile.github ? ["GitHub link shared"] : []),
-      ...(github?.repos.slice(0, 3).map((repo) => `${repo.name}${repo.language ? ` (${repo.language})` : ""}`) ?? []),
-    ],
-    caveats: [
-      "This is a best-effort interpretation based on the public profile fields and public GitHub data provided.",
-      "It does not scrape private LinkedIn or private resume content.",
-    ],
-    sources: [
-      "Supabase profile fields",
-      ...(github ? ["Public GitHub API"] : []),
-    ],
     generatedAt: new Date().toISOString(),
   };
 }
@@ -163,12 +139,12 @@ export async function fetchGithubProfile(username: string): Promise<GithubProfil
 
   const reposData = reposResponse.ok
     ? ((await reposResponse.json()) as Array<{
-        name: string;
-        description: string | null;
-        language: string | null;
-        stargazers_count: number;
-        html_url: string;
-      }>)
+      name: string;
+      description: string | null;
+      language: string | null;
+      stargazers_count: number;
+      html_url: string;
+    }>)
     : [];
 
   return {
@@ -230,8 +206,8 @@ export async function generateProfileInsight(profile: ProfileRow, github: Github
     "Analyze this hackathon participant profile for teammate matching.",
     "Use only the supplied profile fields and any public GitHub signals.",
     "Do not claim access to private LinkedIn or resume content.",
-    "Return valid JSON with keys: summary (string), confidence (low|medium|high), strengths (string[]), signals (string[]), caveats (string[]), sources (string[]).",
-    "Keep the summary concise, practical, and grounded in the provided data.",
+    "Return valid JSON with keys: summary (string), confidence (low|medium|high).",
+    "Thoroughly summarize all the information available, including their public GitHub repositories, to provide a comprehensive overview of the candidate.",
     JSON.stringify(payload),
   ].join("\n\n");
 
@@ -252,6 +228,8 @@ export async function generateProfileInsight(profile: ProfileRow, github: Github
   );
 
   if (!response.ok) {
+    const errText = await response.text();
+    console.error("Gemini API Error:", response.status, errText);
     return buildFallbackInsight(normalized, github);
   }
 
@@ -272,13 +250,10 @@ export async function generateProfileInsight(profile: ProfileRow, github: Github
       confidence: parsed.confidence === "high" || parsed.confidence === "medium" || parsed.confidence === "low"
         ? parsed.confidence
         : fallback.confidence,
-      strengths: Array.isArray(parsed.strengths) ? parsed.strengths.filter((item): item is string => typeof item === "string") : fallback.strengths,
-      signals: Array.isArray(parsed.signals) ? parsed.signals.filter((item): item is string => typeof item === "string") : fallback.signals,
-      caveats: Array.isArray(parsed.caveats) ? parsed.caveats.filter((item): item is string => typeof item === "string") : fallback.caveats,
-      sources: Array.isArray(parsed.sources) ? parsed.sources.filter((item): item is string => typeof item === "string") : fallback.sources,
       generatedAt: new Date().toISOString(),
     };
-  } catch {
+  } catch (e) {
+    console.error("Gemini Parse Error:", e, "Raw text:", text);
     return buildFallbackInsight(normalized, github);
   }
 }

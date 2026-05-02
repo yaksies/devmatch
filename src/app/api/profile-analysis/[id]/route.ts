@@ -71,13 +71,18 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     .eq("profile_id", profileId)
     .maybeSingle();
 
-  if (cachedInsight?.signature === signature && cachedInsight.payload) {
-    return NextResponse.json({
-      cached: true,
-      signature,
-      profileId,
-      insight: cachedInsight.payload as ProfileInsight,
-    });
+  if (cachedInsight?.signature === signature && cachedInsight.payload && cachedInsight.generated_at) {
+    const ageInMs = Date.now() - new Date(cachedInsight.generated_at).getTime();
+    const isStale = ageInMs > 24 * 60 * 60 * 1000; // 24 hours
+    
+    if (!isStale) {
+      return NextResponse.json({
+        cached: true,
+        signature,
+        profileId,
+        insight: cachedInsight.payload as ProfileInsight,
+      });
+    }
   }
 
   const insight = await generateProfileInsight(analysisProfile, githubProfile);

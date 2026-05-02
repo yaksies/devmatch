@@ -163,7 +163,8 @@ export default function ProfileScreen() {
     setLoading(false);
 
     if (error) {
-      setMessage(error.message);
+      console.error("Error saving profile:", error);
+      setMessage("Failed to save profile: " + error.message);
       return;
     }
 
