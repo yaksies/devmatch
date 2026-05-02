@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-
 import { createClient } from "@/lib/supabase/client";
 
 type MessageRow = {
@@ -20,7 +19,9 @@ type Props = {
 
 export function ChatTimeline({ roomId, currentUserId, initialMessages }: Props) {
   const [messages, setMessages] = useState<MessageRow[]>(initialMessages);
+  const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setMessages(initialMessages);
@@ -45,33 +46,59 @@ export function ChatTimeline({ roomId, currentUserId, initialMessages }: Props) 
               ? current
               : [...current, nextMessage],
           );
+          // Mark as new for animation
+          setNewMessageIds((current) => new Set(current).add(nextMessage.id));
+          // Clean up animation class after it finishes
+          setTimeout(() => {
+            setNewMessageIds((current) => {
+              const next = new Set(current);
+              next.delete(nextMessage.id);
+              return next;
+            });
+          }, 400);
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR") {
+          console.error(`Realtime subscription failed for room ${roomId}`);
+        }
+      });
 
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [roomId]);
 
+  // Only scroll if the user is already near the bottom
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    const container = containerRef.current;
+    if (!container) return;
+
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+
+    // Only auto-scroll if within 100px of the bottom
+    if (distanceFromBottom < 100) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
   }, [messages]);
 
   const renderedMessages = useMemo(
     () =>
       messages.map((message) => {
         const isMine = message.sender_id === currentUserId;
+        const isNew = newMessageIds.has(message.id);
 
         return (
           <div
             key={message.id}
-            className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+            className={`flex ${isMine ? "justify-end" : "justify-start"} ${isNew ? "animate-message-in" : ""
+              }`}
           >
             <div
               className={`max-w-[80%] rounded-3xl px-4 py-3 text-sm leading-6 ${isMine
-                ? "bg-[var(--accent)] text-[var(--accent-fg)]"
-                : "bg-[var(--muted-bg)] text-[var(--foreground)]"
+                  ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                  : "bg-[var(--muted-bg)] text-[var(--foreground)]"
                 }`}
             >
               {message.body}
@@ -79,11 +106,26 @@ export function ChatTimeline({ roomId, currentUserId, initialMessages }: Props) 
           </div>
         );
       }),
-    [currentUserId, messages],
+    [currentUserId, messages, newMessageIds],
   );
 
   return (
-    <div className="flex-1 overflow-y-auto py-5">
+    <div ref={containerRef} className="flex-1 overflow-y-auto py-5">
+      <style>{`
+        @keyframes message-in {
+          from {
+            opacity: 0;
+            transform: translateY(10px) scale(0.97);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        .animate-message-in {
+          animation: message-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+      `}</style>
       {messages.length ? (
         <div className="space-y-3">{renderedMessages}</div>
       ) : (
