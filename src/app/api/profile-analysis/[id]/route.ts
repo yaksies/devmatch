@@ -65,6 +65,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const githubProfile = normalizedGithub ? await fetchGithubProfile(normalizedGithub) : null;
   const signature = getProfileInsightSignature(analysisProfile, githubProfile);
 
+  // If no provider key is configured, the helper will return a fallback insight.
+
   const { data: cachedInsight } = await supabase
     .from("profile_ai_insights")
     .select("signature,payload,generated_at")
@@ -74,7 +76,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (cachedInsight?.signature === signature && cachedInsight.payload && cachedInsight.generated_at) {
     const ageInMs = Date.now() - new Date(cachedInsight.generated_at).getTime();
     const isStale = ageInMs > 24 * 60 * 60 * 1000; // 24 hours
-    
+
     if (!isStale) {
       return NextResponse.json({
         cached: true,
