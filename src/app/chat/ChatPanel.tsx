@@ -32,7 +32,7 @@ export function ChatPanel({ roomId, currentUserId, initialMessages }: Props) {
             <ChatMessageBox
                 roomId={roomId}
                 currentUserId={currentUserId}
-                onMessageSent={(msg) => timelineRef.current?.addMessage(msg)}
+                onMessageSent={(msg) => timelineRef.current?.addMessage(msg as MessageRow)}
             />
         </div>
     );

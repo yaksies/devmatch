@@ -17,7 +17,6 @@ export function ProfileAiInsightButton({ profileId, profileName }: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cached, setCached] = useState(false);
   const [insight, setInsight] = useState<Insight | null>(null);
 
   async function loadInsight() {
@@ -40,7 +39,6 @@ export function ProfileAiInsightButton({ profileId, profileName }: Props) {
         throw new Error(data.error || "Failed to load AI insight");
       }
 
-      setCached(Boolean(data.cached));
       setInsight(data.insight ?? null);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Failed to load AI insight");
@@ -79,7 +77,7 @@ export function ProfileAiInsightButton({ profileId, profileName }: Props) {
             </div>
 
             <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
-              This summary uses the profile details they've shared plus any public GitHub info.
+              This summary uses the profile details they&apos;ve shared plus any public GitHub info.
             </p>
 
             {loading ? (

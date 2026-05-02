@@ -25,6 +25,7 @@ export const ChatTimeline = forwardRef<ChatTimelineHandle, Props>(
   function ChatTimeline({ roomId, currentUserId, initialMessages }, ref) {
     const [messages, setMessages] = useState<MessageRow[]>(initialMessages);
     const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
     const bottomRef = useRef<HTMLDivElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -42,7 +43,6 @@ export const ChatTimeline = forwardRef<ChatTimelineHandle, Props>(
       }, 400);
     }, []);
 
-    // Expose addMessage to parent via ref
     useImperativeHandle(ref, () => ({ addMessage }), [addMessage]);
 
     useEffect(() => {
@@ -53,27 +53,21 @@ export const ChatTimeline = forwardRef<ChatTimelineHandle, Props>(
       const supabase = createClient();
       const channel = supabase
         .channel(`chat-room-${roomId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "chat_messages",
-            filter: `room_id=eq.${roomId}`,
-          },
-          (payload) => {
-            addMessage(payload.new as MessageRow);
-          },
-        )
+        .on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_messages",
+          filter: `room_id=eq.${roomId}`,
+        }, (payload) => {
+          addMessage(payload.new as MessageRow);
+        })
         .subscribe((status) => {
           if (status === "CHANNEL_ERROR") {
             console.error(`Realtime subscription failed for room ${roomId}`);
           }
         });
 
-      return () => {
-        void supabase.removeChannel(channel);
-      };
+      return () => { void supabase.removeChannel(channel); };
     }, [roomId, addMessage]);
 
     useEffect(() => {
@@ -86,6 +80,14 @@ export const ChatTimeline = forwardRef<ChatTimelineHandle, Props>(
       }
     }, [messages]);
 
+    // Close context menu on outside click
+    useEffect(() => {
+      if (!contextMenu) return;
+      const handler = () => setContextMenu(null);
+      window.addEventListener("click", handler);
+      return () => window.removeEventListener("click", handler);
+    }, [contextMenu]);
+
     const renderedMessages = useMemo(
       () =>
         messages.map((message) => {
@@ -94,8 +96,11 @@ export const ChatTimeline = forwardRef<ChatTimelineHandle, Props>(
           return (
             <div
               key={message.id}
-              className={`flex ${isMine ? "justify-end" : "justify-start"} ${isNew ? "animate-message-in" : ""
-                }`}
+              className={`flex ${isMine ? "justify-end" : "justify-start"} ${isNew ? "animate-message-in" : ""}`}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setContextMenu({ x: e.clientX, y: e.clientY, messageId: message.id });
+              }}
             >
               <div
                 className={`max-w-[80%] rounded-3xl px-4 py-3 text-sm leading-6 ${isMine
@@ -112,16 +117,37 @@ export const ChatTimeline = forwardRef<ChatTimelineHandle, Props>(
     );
 
     return (
-      <div ref={containerRef} className="h-full overflow-y-auto py-5">
+      <div ref={containerRef} className="chat-scroll h-full overflow-x-hidden overflow-y-auto py-5">
         <style>{`
           @keyframes message-in {
             from { opacity: 0; transform: translateY(10px) scale(0.97); }
-            to   { opacity: 1; transform: translateY(0)    scale(1);    }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
           }
           .animate-message-in {
             animation: message-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
           }
+          .chat-scroll::-webkit-scrollbar { width: 4px; }
+          .chat-scroll::-webkit-scrollbar-track { background: transparent; }
+          .chat-scroll::-webkit-scrollbar-thumb { background: transparent; }
+          .chat-scroll { scrollbar-width: none; }
         `}</style>
+
+        {/* Right-click context menu */}
+        {contextMenu && (
+          <div
+            className="fixed z-50 min-w-[140px] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl"
+            style={{ top: contextMenu.y, left: contextMenu.x }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-300 transition-colors hover:bg-red-500/10"
+              onClick={() => setContextMenu(null)}
+            >
+              Close menu
+            </button>
+          </div>
+        )}
+
         {messages.length ? (
           <div className="space-y-3">{renderedMessages}</div>
         ) : (

@@ -46,6 +46,7 @@ export default async function ChatPage({
   const requestedPartnerId = Array.isArray(resolvedParams.with)
     ? resolvedParams.with[0]
     : resolvedParams.with;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
