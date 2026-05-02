@@ -22,32 +22,34 @@ export async function SiteHeader() {
           DevMatch
         </Link>
         <nav className="flex items-center gap-1 sm:gap-3">
-          {nav.map((item) => (
+          {user ? (
+            <>
+              {nav.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="rounded-lg px-2.5 py-1.5 text-sm text-[var(--muted)] transition-colors hover:bg-[var(--muted-bg)] hover:text-[var(--foreground)] sm:px-3"
+                >
+                  {item.label}
+                </Link>
+              ))}
+
+              <div className="ml-2 flex items-center border-l border-[var(--border)] pl-2">
+                <form action={logout}>
+                  <button className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-[var(--muted)] transition-colors hover:bg-[var(--muted-bg)] hover:text-red-400 sm:px-3">
+                    Log out
+                  </button>
+                </form>
+              </div>
+            </>
+          ) : (
             <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-lg px-2.5 py-1.5 text-sm text-[var(--muted)] transition-colors hover:bg-[var(--muted-bg)] hover:text-[var(--foreground)] sm:px-3"
+              href="/login"
+              className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-[var(--accent-fg)] transition-opacity hover:opacity-90"
             >
-              {item.label}
+              Log in
             </Link>
-          ))}
-          
-          <div className="ml-2 pl-2 border-l border-[var(--border)] flex items-center">
-            {user ? (
-              <form action={logout}>
-                <button className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-[var(--muted)] transition-colors hover:bg-[var(--muted-bg)] hover:text-red-400 sm:px-3">
-                  Log out
-                </button>
-              </form>
-            ) : (
-              <Link
-                href="/login"
-                className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-[var(--accent-fg)] transition-opacity hover:opacity-90"
-              >
-                Log in
-              </Link>
-            )}
-          </div>
+          )}
         </nav>
       </div>
     </header>

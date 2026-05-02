@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# devmatch — Next + Expo + Supabase
 
-## Getting Started
+A compact demo app combining a Next.js web frontend, an Expo React Native mobile app, and Supabase for auth and data persistence. Built for quick iteration and experimenting with swipe-first interactions and native-feeling mobile tabs. 🚀
 
-First, run the development server:
+## About
+
+- **Web:** Next.js App Router (server & client components)
+- **Mobile:** Expo + Expo Router
+- **Auth & DB:** Supabase (client + server usage)
+- **Features:** swipe-first discover cards, native tabs on mobile, homepage intro gate, auth gating.
+
+## Quick start — run locally 🖥️
+
+Prerequisites: `node` (16+), `npm` or `pnpm`/`yarn`, and `expo` (for mobile).
+
+1. Install deps
+
+```bash
+npm install
+# or pnpm install
+```
+
+2. Start the web dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Run the mobile app (optional)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cd mobile
+npm install
+expo start
+```
 
-## Learn More
+Then open in the Expo Go app or run on a simulator/device.
 
-To learn more about Next.js, take a look at the following resources:
+## Environment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- The web and mobile app expect Supabase credentials. Create a `.env.local` (web) and set the usual Supabase keys:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=(only for server-side tasks)
+```
 
-## Deploy on Vercel
+For mobile, set the same variables in `mobile/.env` or use `expo secrets`/Env config.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Important scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` — run Next.js in development
+- `npm run build` — build Next.js for production
+- `npm run start` — run built Next app
+- `cd mobile && expo start` — start Expo for mobile development
+
+## Notes & tips 🎯
+
+- The homepage is wrapped in `src/components/HomepageIntroGate.tsx` which shows a first-time intro overlay for logged-out users.
+- Swipe interactions live in `src/components/SwipeDemo.tsx` and `mobile/app/(tabs)/discover.tsx` (mobile uses `PanResponder`).
+- Auth gating is enforced by `src/middleware.ts` on the web; if you change routes update middleware accordingly.
+- Use WebP or SVG for intro graphics; SVG works well for vector icons and scales crisply.
+
+## Deploy
+
+- Deploy the web app to Vercel. Remember to add Supabase env vars in the Vercel project settings before deploying.
+
+## Contributing
+
+- Open an issue or PR. Keep changes focused and run the dev server to verify UI/UX before submitting.
+
+---
+
+Made with ❤️ — tweak any instructions to match your environment.

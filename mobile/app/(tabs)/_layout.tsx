@@ -1,68 +1,45 @@
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { Tabs } from "expo-router";
-import type { ComponentProps } from "react";
+import { NativeTabs, Icon, Label, VectorIcon } from "expo-router/unstable-native-tabs";
+import { Platform } from "react-native";
 
 import { useColorScheme } from "@/components/useColorScheme";
-import { useClientOnlyValue } from "@/components/useClientOnlyValue";
 import Colors from "@/constants/Colors";
-
-function TabBarIcon(props: {
-  name: ComponentProps<typeof FontAwesome>["name"];
-  color: string;
-}) {
-  return <FontAwesome size={24} style={{ marginBottom: -2 }} {...props} />;
-}
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: colors.tint,
-        tabBarStyle: { backgroundColor: colors.background },
-        headerStyle: { backgroundColor: colors.background },
-        headerTintColor: colors.text,
-        headerShown: useClientOnlyValue(false, true),
+    <NativeTabs
+      backgroundColor={Platform.OS === "ios" ? null : colors.background}
+      blurEffect={Platform.OS === "ios" ? "systemChromeMaterial" : undefined}
+      minimizeBehavior={Platform.OS === "ios" ? "automatic" : undefined}
+      iconColor={{ default: colors.tabIconDefault, selected: colors.tint }}
+      labelStyle={{
+        default: { fontSize: 11, fontWeight: "600" },
+        selected: { fontSize: 11, fontWeight: "700" },
       }}
+      rippleColor={Platform.OS === "android" ? "rgba(124,58,237,0.18)" : undefined}
+      indicatorColor={Platform.OS === "android" ? colors.tint : undefined}
+      disableTransparentOnScrollEdge={false}
+      shadowColor={Platform.OS === "ios" ? "rgba(0,0,0,0.18)" : undefined}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color }) => (
-            <TabBarIcon name="home" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="discover"
-        options={{
-          title: "Discover",
-          tabBarIcon: ({ color }) => (
-            <TabBarIcon name="users" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color }) => (
-            <TabBarIcon name="user" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="chat"
-        options={{
-          title: "Chat",
-          tabBarIcon: ({ color }) => (
-            <TabBarIcon name="comments" color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+      <NativeTabs.Trigger name="index">
+        <Icon src={<VectorIcon family={FontAwesome} name="home" />} />
+        <Label>Home</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="discover">
+        <Icon src={<VectorIcon family={FontAwesome} name="users" />} />
+        <Label>Discover</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <Icon src={<VectorIcon family={FontAwesome} name="user" />} />
+        <Label>Profile</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="chat">
+        <Icon src={<VectorIcon family={FontAwesome} name="comments" />} />
+        <Label>Chat</Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }

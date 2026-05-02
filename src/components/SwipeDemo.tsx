@@ -34,6 +34,7 @@ export default function SwipeDemo() {
   const [index, setIndex] = useState(0);
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isPromotingNext, setIsPromotingNext] = useState(false);
   const [swipeDir, setSwipeDir] = useState<-1 | 1 | null>(null);
 
   const startX = useRef(0);
@@ -58,6 +59,30 @@ export default function SwipeDemo() {
     };
   }, [dragX, isDragging, swipeDir]);
 
+  const nextCardStyle = useMemo(() => {
+    const liftProgress = isPromotingNext ? 1 : Math.min(Math.abs(dragX) / 160, 1);
+    const y = 40 - liftProgress * 40;
+    const scale = 0.88 + liftProgress * 0.12;
+    const opacity = 0.46 + liftProgress * 0.54;
+
+    return {
+      transform: `translateY(${y}px) scale(${scale})`,
+      opacity,
+      zIndex: isPromotingNext ? 20 : 0,
+      transformOrigin: "center bottom",
+      boxShadow: isPromotingNext
+        ? "0 28px 70px rgba(0,0,0,0.42)"
+        : "0 10px 24px rgba(0,0,0,0.22)",
+      transition: isDragging
+        ? "none"
+        : "transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 280ms ease",
+    };
+  }, [dragX, isDragging, isPromotingNext]);
+
+  const indicatorOpacity = Math.min(Math.abs(dragX) / 70, 1);
+  const showPass = dragX < -8;
+  const showLike = dragX > 8;
+
   useEffect(() => {
     return () => {
       if (wheelEndTimer.current) {
@@ -71,11 +96,13 @@ export default function SwipeDemo() {
 
     swipeCooldownUntil.current = Date.now() + 320;
     setSwipeDir(dir);
+    setIsPromotingNext(true);
     window.setTimeout(() => {
       setIndex((prev) => (prev + 1) % DEMO_PROFILES.length);
       setDragX(0);
       wheelDragX.current = 0;
       setSwipeDir(null);
+      setIsPromotingNext(false);
     }, 220);
   };
 
@@ -88,6 +115,7 @@ export default function SwipeDemo() {
     }
 
     setDragX(0);
+    setIsPromotingNext(false);
   };
 
   const finishWheelGesture = () => {
@@ -100,6 +128,7 @@ export default function SwipeDemo() {
 
     wheelDragX.current = 0;
     setDragX(0);
+    setIsPromotingNext(false);
   };
 
   return (
@@ -128,15 +157,14 @@ export default function SwipeDemo() {
         }, 110);
       }}
     >
-      <p className="px-2 pb-3 text-xs font-medium uppercase tracking-[0.16em] text-[var(--muted)]">
-        Interactive Demo
-      </p>
-
       <div className="relative h-[420px] touch-pan-y overflow-hidden rounded-2xl bg-black/20 p-2">
         <div className="absolute inset-2 rounded-2xl border border-white/10 bg-white/[0.02]" />
 
         <div className="absolute inset-0 flex items-center justify-center">
-          <article className="h-[320px] w-[90%] max-w-[320px] rounded-2xl border border-white/10 bg-[#17171b] p-5 opacity-70">
+          <article
+            style={nextCardStyle}
+            className="absolute h-[320px] w-[90%] max-w-[320px] rounded-2xl border border-white/10 bg-[#17171b] p-5 shadow-xl"
+          >
             <p className="text-xs uppercase tracking-widest text-[var(--muted)]">Up next</p>
             <h3 className="mt-3 text-2xl font-semibold text-[var(--foreground)]">{next.name}</h3>
             <p className="mt-2 text-sm text-[var(--muted)]">{next.role}</p>
@@ -147,12 +175,13 @@ export default function SwipeDemo() {
         <div className="absolute inset-0 flex items-center justify-center">
           <article
             style={cardStyle}
-            className="h-[330px] w-[92%] max-w-[330px] rounded-2xl border border-white/15 bg-[#1f1f25] p-6 shadow-2xl"
+            className="absolute h-[330px] w-[92%] max-w-[330px] rounded-2xl border border-white/15 bg-[#1f1f25] p-6 shadow-2xl relative"
             onPointerDown={(event) => {
               if (event.button !== 0 && event.pointerType === "mouse") return;
               event.currentTarget.setPointerCapture(event.pointerId);
               startX.current = event.clientX;
               setIsDragging(true);
+              setIsPromotingNext(false);
             }}
             onPointerMove={(event) => {
               if (!isDragging || swipeDir) return;
@@ -162,6 +191,22 @@ export default function SwipeDemo() {
             onPointerCancel={() => finishDrag()}
           >
             <p className="text-xs uppercase tracking-widest text-[var(--accent)]">Available now</p>
+
+            <div className="pointer-events-none absolute left-5 right-5 top-5 flex items-center justify-between">
+              <div
+                className="rounded-full border border-rose-400/50 bg-rose-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-200"
+                style={{ opacity: showPass ? indicatorOpacity : 0 }}
+              >
+                Pass
+              </div>
+              <div
+                className="rounded-full border border-emerald-400/50 bg-emerald-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-200"
+                style={{ opacity: showLike ? indicatorOpacity : 0 }}
+              >
+                Like
+              </div>
+            </div>
+
             <h3 className="mt-3 text-3xl font-semibold text-[var(--foreground)]">{current.name}</h3>
             <p className="mt-2 text-sm text-[var(--muted)]">{current.role}</p>
 
@@ -180,10 +225,6 @@ export default function SwipeDemo() {
         </div>
       </div>
 
-      <p className="px-2 pt-4 text-xs text-[var(--muted)]">
-        Touch/drag on mobile. On web, hover this panel and use a two-finger
-        horizontal swipe on your trackpad.
-      </p>
     </div>
   );
 }
