@@ -15,6 +15,7 @@ async function ensureMatchRoom(userId: string, targetId: string) {
   const supabase = await createClient();
   const pair = getOrderedMatchPair(userId, targetId);
 
+  console.log(`[ensureMatchRoom] Checking for reciprocal swipe: swiper=${targetId}, target=${userId}`);
   const { data: reciprocalSwipe } = await supabase
     .from("swipes")
     .select("id")
@@ -23,10 +24,14 @@ async function ensureMatchRoom(userId: string, targetId: string) {
     .eq("direction", "like")
     .maybeSingle();
 
+  console.log("[ensureMatchRoom] Reciprocal swipe found:", reciprocalSwipe);
+
   if (!reciprocalSwipe) {
+    console.log("[ensureMatchRoom] No reciprocal swipe, returning null");
     return { matchId: null };
   }
 
+  console.log("[ensureMatchRoom] Creating match with pair:", pair);
   const { data: match, error: matchError } = await supabase
     .from("matches")
     .upsert(pair, { onConflict: "user_a,user_b" })
@@ -34,12 +39,18 @@ async function ensureMatchRoom(userId: string, targetId: string) {
     .single();
 
   if (matchError || !match) {
+    console.error("[ensureMatchRoom] Error creating match:", matchError);
     return { error: matchError };
   }
 
+  console.log("[ensureMatchRoom] Match created:", match.id);
+
+  console.log("[ensureMatchRoom] Creating chat room");
   const { error: roomError } = await supabase
     .from("chat_rooms")
     .upsert({ match_id: match.id }, { onConflict: "match_id" });
+
+  console.log("[ensureMatchRoom] Chat room creation result:", roomError ? "error" : "success");
 
   return roomError ? { error: roomError } : { matchId: match.id };
 }
@@ -52,6 +63,8 @@ export async function acceptBack(targetId: string) {
     redirect("/login");
   }
 
+  console.log(`[acceptBack] User ${user.id} accepting ${targetId}`);
+
   const { error } = await supabase.from("swipes").upsert({
     swiper_id: user.id,
     target_id: targetId,
@@ -59,17 +72,23 @@ export async function acceptBack(targetId: string) {
   });
 
   if (error) {
+    console.error("[acceptBack] Error creating swipe:", error);
     redirect(`/notifications?message=${encodeURIComponent(error.message)}`);
   }
 
+  console.log("[acceptBack] Swipe created, calling ensureMatchRoom");
   const matchResult = await ensureMatchRoom(user.id, targetId);
+  console.log("[acceptBack] ensureMatchRoom result:", matchResult);
+
   if ("error" in matchResult && matchResult.error) {
+    console.error("[acceptBack] Error creating match:", matchResult.error);
     redirect(`/notifications?message=${encodeURIComponent(matchResult.error.message)}`);
   }
 
   revalidatePath("/notifications");
   revalidatePath("/accepted");
   revalidatePath("/chat");
+  console.log("[acceptBack] Redirecting to chat with matchId:", matchResult.matchId);
   redirect(matchResult.matchId ? `/chat?with=${targetId}` : "/accepted");
 }
 

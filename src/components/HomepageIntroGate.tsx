@@ -10,7 +10,7 @@ type Props = {
 const STORAGE_KEY = "devmatch-homepage-intro-seen";
 
 export default function HomepageIntroGate({ children }: Props) {
-  const [mounted, setMounted] = useState(false);
+  const [mounted] = useState(true);
   const [showIntro, setShowIntro] = useState(false);
   const [contentVisible, setContentVisible] = useState(false);
   const [introGone, setIntroGone] = useState(false);
@@ -42,7 +42,6 @@ export default function HomepageIntroGate({ children }: Props) {
       setIntroGone(false);
     }
 
-    setMounted(true);
     void bootstrap();
 
     return () => {
@@ -74,11 +73,10 @@ export default function HomepageIntroGate({ children }: Props) {
   return (
     <div className="relative">
       <div
-        className={`transition-[opacity,filter,transform] duration-[1200ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] ${
-          contentVisible
+        className={`transition-[opacity,filter,transform] duration-[1200ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] ${contentVisible
             ? "opacity-100 blur-0 translate-y-0"
             : "opacity-0 blur-[12px] translate-y-3"
-        }`}
+          }`}
       >
         {children}
       </div>

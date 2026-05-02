@@ -98,7 +98,8 @@ export function DiscoverDeck({ initialProfiles }: Props) {
   const cardStyle = useMemo(() => {
     const x = swipeDir ? swipeDir * 460 : dragX;
     const rotation = x / 22;
-    const opacity = swipeDir ? 0.12 : 1 - Math.min(Math.abs(x) / 420, 0.25);
+    const threshold = typeof window !== 'undefined' ? Math.max(300, window.innerWidth * 0.9) : 420;
+    const opacity = swipeDir ? 0.12 : 1 - Math.min(Math.abs(x) / threshold, 0.25);
 
     return {
       transform: `translateX(${x}px) rotate(${rotation}deg)`,
@@ -110,7 +111,7 @@ export function DiscoverDeck({ initialProfiles }: Props) {
   }, [dragX, isDragging, swipeDir]);
 
   const nextCardStyle = useMemo(() => {
-    const liftProgress = isPromotingNext ? 1 : Math.min(Math.abs(dragX) / 160, 1);
+    const liftProgress = isPromotingNext ? 1 : Math.min(Math.abs(dragX) / 130, 1);
     const y = 40 - liftProgress * 40;
     const scale = 0.88 + liftProgress * 0.12;
     const opacity = 0.46 + liftProgress * 0.54;
@@ -149,7 +150,7 @@ export function DiscoverDeck({ initialProfiles }: Props) {
 
   return (
     <div
-      className="w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-lg shadow-black/20"
+      className="w-full max-w-2xl px-2 sm:px-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 sm:p-4 shadow-lg shadow-black/20"
       onWheel={(event) => {
         if (Math.abs(event.deltaX) < Math.abs(event.deltaY)) return;
         event.preventDefault();
@@ -157,8 +158,8 @@ export function DiscoverDeck({ initialProfiles }: Props) {
         if (swipeDir) return;
 
         wheelDragX.current = Math.max(
-          -260,
-          Math.min(260, wheelDragX.current - event.deltaX)
+          -240,
+          Math.min(240, wheelDragX.current - event.deltaX)
         );
         setDragX(wheelDragX.current);
         setIsDragging(true);
@@ -172,12 +173,12 @@ export function DiscoverDeck({ initialProfiles }: Props) {
         }, 110);
       }}
     >
-      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[var(--surface-2)]">
+      <div className="relative aspect-[3/4] sm:aspect-[4/5] overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[var(--surface-2)]">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--accent-soft),transparent_55%)] opacity-90" />
 
         <article
           style={nextCardStyle}
-          className="absolute inset-x-4 bottom-4 rounded-2xl border border-white/10 bg-[#17171b] p-5 shadow-xl"
+          className="absolute inset-x-2 sm:inset-x-4 bottom-2 sm:bottom-4 rounded-xl sm:rounded-2xl border border-white/10 bg-[#17171b] p-3 sm:p-5 shadow-xl"
         >
           <p className="text-xs font-medium uppercase tracking-wider text-[var(--muted)]">
             Up next
@@ -192,7 +193,7 @@ export function DiscoverDeck({ initialProfiles }: Props) {
 
         <article
           style={cardStyle}
-          className="absolute inset-x-4 bottom-4 relative rounded-2xl border border-white/15 bg-[#1f1f25] p-6 shadow-2xl"
+          className="absolute inset-x-2 sm:inset-x-4 bottom-2 sm:bottom-4 relative rounded-xl sm:rounded-2xl border border-white/15 bg-[#1f1f25] p-4 sm:p-6 shadow-2xl"
           onPointerDown={(event) => {
             if (event.button !== 0 && event.pointerType === "mouse") return;
             event.currentTarget.setPointerCapture(event.pointerId);

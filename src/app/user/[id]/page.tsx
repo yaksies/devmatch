@@ -4,6 +4,16 @@ import { redirect } from "next/navigation";
 import { acceptBack, undoSwipe } from "../../notifications/actions";
 import { createClient } from "@/lib/supabase/server";
 
+async function handleAcceptBack(targetId: string) {
+  "use server";
+  await acceptBack(targetId);
+}
+
+async function handleUndoSwipe(targetId: string, from: string) {
+  "use server";
+  await undoSwipe(targetId, from, true);
+}
+
 export default async function UserProfilePage({
   params,
   searchParams,
@@ -85,14 +95,14 @@ export default async function UserProfilePage({
 
         <div className="mt-8 flex gap-3">
           {canAcceptBack ? (
-            <form action={acceptBack.bind(null, profile.id)}>
+            <form action={handleAcceptBack.bind(null, profile.id)}>
               <button className="inline-flex items-center justify-center rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-medium text-[var(--accent-fg)] transition-opacity hover:opacity-90">
                 Accept back
               </button>
             </form>
           ) : null}
           {canUndo ? (
-            <form action={undoSwipe.bind(null, profile.id, resolvedSearchParams.from || "passed")}>
+            <form action={handleUndoSwipe.bind(null, profile.id, resolvedSearchParams.from || "passed")}>
               <button className="inline-flex items-center justify-center rounded-full border border-[var(--border)] bg-transparent px-5 py-3 text-sm font-medium text-[var(--muted)] transition-colors hover:bg-[var(--muted-bg)] hover:text-[var(--foreground)]">
                 Retake swipe
               </button>

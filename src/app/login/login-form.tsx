@@ -21,10 +21,6 @@ export function LoginForm({ initialMessage }: Props) {
   const confirmInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    setMessage(initialMessage);
-  }, [initialMessage]);
-
-  useEffect(() => {
     if (mode === "signup") {
       window.setTimeout(() => confirmInputRef.current?.focus(), 220);
     }
@@ -57,9 +53,9 @@ export function LoginForm({ initialMessage }: Props) {
   }
 
   return (
-    <div className="relative flex flex-1 items-center justify-center overflow-hidden px-4 py-20 sm:px-6">
+    <div className="relative flex min-h-[100dvh] flex-1 items-center justify-center overflow-y-auto px-4 py-8 sm:py-20 sm:px-6">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(124,58,237,0.18),transparent_38%),radial-gradient(circle_at_bottom_right,_rgba(255,255,255,0.06),transparent_30%)]" />
-      <div className="relative w-full max-w-md rounded-[2rem] border border-[var(--border)] bg-[var(--surface)]/95 p-7 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:p-8">
+      <div className="relative w-full max-w-md rounded-[2rem] border border-[var(--border)] bg-[var(--surface)]/95 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:p-8 my-auto">
         <div className="mb-8 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent)]">
             Account
@@ -78,22 +74,20 @@ export function LoginForm({ initialMessage }: Props) {
           <button
             type="button"
             onClick={() => switchMode("login")}
-            className={`rounded-full px-4 py-2.5 text-sm font-medium transition-all ${
-              mode === "login"
-                ? "bg-[var(--accent)] text-[var(--accent-fg)] shadow-lg shadow-black/20"
-                : "text-[var(--muted)] hover:text-[var(--foreground)]"
-            }`}
+            className={`rounded-full px-4 py-2.5 text-sm font-medium transition-all ${mode === "login"
+              ? "bg-[var(--accent)] text-[var(--accent-fg)] shadow-lg shadow-black/20"
+              : "text-[var(--muted)] hover:text-[var(--foreground)]"
+              }`}
           >
             Log in
           </button>
           <button
             type="button"
             onClick={() => switchMode("signup")}
-            className={`rounded-full px-4 py-2.5 text-sm font-medium transition-all ${
-              mode === "signup"
-                ? "bg-[var(--accent)] text-[var(--accent-fg)] shadow-lg shadow-black/20"
-                : "text-[var(--muted)] hover:text-[var(--foreground)]"
-            }`}
+            className={`rounded-full px-4 py-2.5 text-sm font-medium transition-all ${mode === "signup"
+              ? "bg-[var(--accent)] text-[var(--accent-fg)] shadow-lg shadow-black/20"
+              : "text-[var(--muted)] hover:text-[var(--foreground)]"
+              }`}
           >
             Sign up
           </button>
@@ -140,11 +134,10 @@ export function LoginForm({ initialMessage }: Props) {
           </div>
 
           <div
-            className={`overflow-hidden transition-all duration-300 ease-out ${
-              mode === "signup"
-                ? "max-h-40 translate-y-0 opacity-100"
-                : "max-h-0 -translate-y-2 opacity-0"
-            }`}
+            className={`overflow-hidden transition-all duration-300 ease-out ${mode === "signup"
+              ? "max-h-40 translate-y-0 opacity-100"
+              : "max-h-0 -translate-y-2 opacity-0"
+              }`}
           >
             <div className="pt-1">
               <div className="flex flex-col gap-2">

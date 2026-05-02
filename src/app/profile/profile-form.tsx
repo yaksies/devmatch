@@ -10,8 +10,15 @@ function parseStack(raw: string): string[] {
     .filter(Boolean);
 }
 
+type Profile = {
+  display_name?: string;
+  headline?: string;
+  tech_stack?: string[];
+  interests?: string;
+};
+
 type ProfileFormProps = {
-  initialProfile?: any;
+  initialProfile?: Profile;
 };
 
 export function ProfileForm({ initialProfile }: ProfileFormProps) {
@@ -30,7 +37,7 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
 
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (user) {
       await supabase.from("profiles").upsert({
         id: user.id,

@@ -28,6 +28,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      style={{ height: '100dvh' } as React.CSSProperties}
     >
       <body className="min-h-full flex flex-col bg-[var(--background)] font-sans">
         <SiteHeader />

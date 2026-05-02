@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NotificationDetail } from "@/components/NotificationDetail";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 type Profile = {
   id: string;
@@ -14,10 +15,52 @@ type Profile = {
 
 type Props = {
   profiles: Profile[];
+  userId: string;
 };
 
-export function NotificationCarousel({ profiles }: Props) {
+export function NotificationCarousel({ profiles: initialProfiles, userId }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [profiles, setProfiles] = useState(initialProfiles);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    // Subscribe to new swipes directed at this user
+    const channel = supabase
+      .channel(`notifications-${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "swipes",
+          filter: `target_id=eq.${userId}`,
+        },
+        async (payload) => {
+          const newSwipe = payload.new;
+          if (newSwipe.direction === "like") {
+            // Fetch the profile of the swiper
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("id, display_name, headline, tech_stack, interests")
+              .eq("id", newSwipe.swiper_id)
+              .single();
+
+            if (profile) {
+              setProfiles(current => {
+                const exists = current.some(p => p.id === profile.id);
+                return exists ? current : [profile, ...current];
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [userId]);
 
   if (!profiles.length) {
     return (
@@ -42,11 +85,10 @@ export function NotificationCarousel({ profiles }: Props) {
             <button
               key={idx}
               onClick={() => setCurrentIndex(idx)}
-              className={`h-2 rounded-full transition-all ${
-                idx === currentIndex
-                  ? "w-6 bg-[var(--accent)]"
-                  : "w-2 bg-[var(--muted-bg)]"
-              }`}
+              className={`h-2 rounded-full transition-all ${idx === currentIndex
+                ? "w-6 bg-[var(--accent)]"
+                : "w-2 bg-[var(--muted-bg)]"
+                }`}
               aria-label={`Go to notification ${idx + 1}`}
             />
           ))}

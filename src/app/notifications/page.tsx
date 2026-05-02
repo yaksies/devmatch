@@ -27,9 +27,9 @@ export default async function NotificationsPage() {
 
   const { data: profiles } = swiperIds.length
     ? await supabase
-        .from("profiles")
-        .select("id, display_name, headline, tech_stack, interests")
-        .in("id", swiperIds)
+      .from("profiles")
+      .select("id, display_name, headline, tech_stack, interests")
+      .in("id", swiperIds)
     : { data: [] as Array<{ id: string; display_name: string; headline: string | null; tech_stack: string[] | null; interests: string | null }> };
 
   return (
@@ -44,7 +44,7 @@ export default async function NotificationsPage() {
         <div className="w-12" />
       </div>
 
-      <NotificationCarousel profiles={profiles ?? []} />
+      <NotificationCarousel profiles={profiles ?? []} userId={user.id} />
     </div>
   );
 }

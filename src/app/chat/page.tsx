@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ChatTimeline } from "./chat-timeline";
 import { sendMessage } from "./actions";
 import { createClient } from "@/lib/supabase/server";
+import { ChatSidebar } from "@/components/ChatSidebar";
 
 type MatchRow = {
   id: string;
@@ -58,16 +59,16 @@ export default async function ChatPage({
 
   const { data: profileData } = partnerIds.length
     ? await supabase
-        .from("profiles")
-        .select("id, display_name, headline")
-        .in("id", partnerIds)
+      .from("profiles")
+      .select("id, display_name, headline")
+      .in("id", partnerIds)
     : { data: [] as ProfileRow[] };
 
   const { data: roomData } = matches.length
     ? await supabase
-        .from("chat_rooms")
-        .select("id, match_id")
-        .in("match_id", matches.map((match) => match.id))
+      .from("chat_rooms")
+      .select("id, match_id")
+      .in("match_id", matches.map((match) => match.id))
     : { data: [] as RoomRow[] };
 
   const profileMap = new Map((profileData ?? []).map((profile) => [profile.id, profile]));
@@ -85,67 +86,21 @@ export default async function ChatPage({
 
   const { data: messageData } = selectedRoom
     ? await supabase
-        .from("chat_messages")
-        .select("id, room_id, sender_id, body, created_at")
-        .eq("room_id", selectedRoom.id)
-        .order("created_at", { ascending: true })
+      .from("chat_messages")
+      .select("id, room_id, sender_id, body, created_at")
+      .eq("room_id", selectedRoom.id)
+      .order("created_at", { ascending: true })
     : { data: [] as MessageRow[] };
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 lg:flex-row">
       <aside className="w-full rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xl shadow-black/10 lg:max-w-sm">
-        <div className="mb-4 px-2 pt-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
-            Chat
-          </h1>
-          <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">
-            Conversations only appear after both people like each other.
-          </p>
-        </div>
-
-        {partnerIds.length ? (
-          <div className="space-y-2">
-            {partnerIds.map((partnerId) => {
-              const profile = profileMap.get(partnerId);
-              const isSelected = partnerId === selectedPartnerId;
-
-              return (
-                <Link
-                  key={partnerId}
-                  href={`/chat?with=${partnerId}`}
-                  className={`block rounded-2xl border px-4 py-3 transition-colors ${
-                    isSelected
-                      ? "border-[var(--accent)] bg-[var(--accent-soft)]"
-                      : "border-[var(--border)] bg-[var(--surface-2)] hover:bg-[var(--muted-bg)]"
-                  }`}
-                >
-                  <p className="font-medium text-[var(--foreground)]">
-                    {profile?.display_name ?? "Unknown"}
-                  </p>
-                  <p className="mt-1 text-sm text-[var(--muted)]">
-                    {profile?.headline ?? "Matched on DevMatch"}
-                  </p>
-                </Link>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="rounded-3xl border border-dashed border-[var(--border)] bg-[var(--surface-2)] px-6 py-12 text-center">
-            <p className="text-base font-medium text-[var(--foreground)]">
-              No matches yet
-            </p>
-            <p className="mt-2 text-sm text-[var(--muted)]">
-              Once you and another participant accept each other, the chat room
-              will appear here.
-            </p>
-            <Link
-              href="/discover"
-              className="mt-5 inline-flex rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-fg)] transition-opacity hover:opacity-90"
-            >
-              Keep swiping
-            </Link>
-          </div>
-        )}
+        <ChatSidebar
+          initialPartnerIds={partnerIds}
+          initialProfileMap={profileMap}
+          userId={user.id}
+          selectedPartnerId={selectedPartnerId}
+        />
       </aside>
 
       <section className="flex min-h-[640px] flex-1 flex-col rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-2xl shadow-black/10 sm:p-6">

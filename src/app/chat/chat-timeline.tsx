@@ -23,10 +23,6 @@ export function ChatTimeline({ roomId, currentUserId, initialMessages }: Props) 
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setMessages(initialMessages);
-  }, [initialMessages, roomId]);
-
-  useEffect(() => {
     const supabase = createClient();
     const channel = supabase
       .channel(`chat-room-${roomId}`)
@@ -69,11 +65,10 @@ export function ChatTimeline({ roomId, currentUserId, initialMessages }: Props) 
             className={`flex ${isMine ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[80%] rounded-3xl px-4 py-3 text-sm leading-6 ${
-                isMine
+              className={`max-w-[80%] rounded-3xl px-4 py-3 text-sm leading-6 ${isMine
                   ? "bg-[var(--accent)] text-[var(--accent-fg)]"
                   : "bg-[var(--muted-bg)] text-[var(--foreground)]"
-              }`}
+                }`}
             >
               {message.body}
             </div>
