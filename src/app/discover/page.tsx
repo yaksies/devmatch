@@ -1,29 +1,5 @@
 import { DiscoverDeck } from "./discover-deck";
-import type { HackathonProfile } from "@/types/profile";
-
-const mockDeck: HackathonProfile[] = [
-  {
-    id: "1",
-    displayName: "Aisha K.",
-    headline: "Frontend + design systems",
-    techStack: ["React", "TypeScript", "Figma"],
-    interests: "Climate data viz, accessibility-first UI, overnight coffee.",
-  },
-  {
-    id: "2",
-    displayName: "Jordan L.",
-    headline: "ML infra & APIs",
-    techStack: ["Python", "FastAPI", "Postgres"],
-    interests: "NLP for dev tools, quick prototypes, clear docs.",
-  },
-  {
-    id: "3",
-    displayName: "Sam R.",
-    headline: "Product + full-stack",
-    techStack: ["Next.js", "Supabase", "UX research"],
-    interests: "B2B hacks, user interviews between commits.",
-  },
-];
+import { mockDiscoverDeck } from "@devmatch/shared";
 
 export default function DiscoverPage() {
   return (
@@ -37,7 +13,7 @@ export default function DiscoverPage() {
           become matches — then open a realtime chat.
         </p>
       </div>
-      <DiscoverDeck initialProfiles={mockDeck} />
+      <DiscoverDeck initialProfiles={mockDiscoverDeck} />
     </div>
   );
 }

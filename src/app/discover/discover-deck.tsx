@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { HackathonProfile } from "@/types/profile";
+import type { HackathonProfile } from "@devmatch/shared";
 
 type Props = {
   initialProfiles: HackathonProfile[];
