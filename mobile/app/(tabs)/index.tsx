@@ -1,7 +1,46 @@
 import { Link } from "expo-router";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { supabase } from "@/lib/supabase";
+
 export default function HomeScreen() {
+  const [hasUser, setHasUser] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadUser() {
+      if (!supabase || !mounted) {
+        setHasUser(false);
+        return;
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (mounted) {
+        setHasUser(Boolean(user));
+      }
+    }
+
+    loadUser();
+
+    const {
+      data: { subscription },
+    } = supabase?.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        setHasUser(Boolean(session?.user));
+      }
+    }) ?? { data: { subscription: { unsubscribe: () => undefined } } };
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
   return (
     <ScrollView
       contentContainerStyle={styles.scroll}
@@ -28,11 +67,13 @@ export default function HomeScreen() {
           </Pressable>
         </Link>
       </View>
-      <Link href={"/auth" as any} asChild>
-        <Pressable style={styles.authButton}>
-          <Text style={styles.authButtonText}>Log in / Sign up</Text>
-        </Pressable>
-      </Link>
+      {!hasUser ? (
+        <Link href={"/auth" as any} asChild>
+          <Pressable style={styles.authButton}>
+            <Text style={styles.authButtonText}>Log in / Sign up</Text>
+          </Pressable>
+        </Link>
+      ) : null}
     </ScrollView>
   );
 }

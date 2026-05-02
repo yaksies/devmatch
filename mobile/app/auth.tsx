@@ -1,7 +1,10 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -20,8 +23,27 @@ export default function AuthScreen() {
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const signupAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(signupAnim, {
+      toValue: mode === "signup" ? 1 : 0,
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [mode, signupAnim]);
+
+  function switchMode(next: Mode) {
+    if (next === mode) return;
+    setMessage(null);
+    setMode(next);
+  }
 
   async function handleSubmit() {
     if (!supabase) {
@@ -34,6 +56,18 @@ export default function AuthScreen() {
     if (!email || !password) {
       setMessage("Enter both email and password.");
       return;
+    }
+
+    if (mode === "signup") {
+      if (!confirmPassword) {
+        setMessage("Please confirm your password.");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setMessage("Passwords do not match.");
+        return;
+      }
     }
 
     setBusy(true);
@@ -81,7 +115,7 @@ export default function AuthScreen() {
 
           <View style={styles.segmentRow}>
             <Pressable
-              onPress={() => setMode("login")}
+              onPress={() => switchMode("login")}
               style={[styles.segment, mode === "login" && styles.segmentActive]}
             >
               <Text
@@ -94,7 +128,7 @@ export default function AuthScreen() {
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => setMode("signup")}
+              onPress={() => switchMode("signup")}
               style={[styles.segment, mode === "signup" && styles.segmentActive]}
             >
               <Text
@@ -131,17 +165,85 @@ export default function AuthScreen() {
           />
 
           <Text style={styles.label}>Password</Text>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder="••••••••"
-            secureTextEntry
-            autoCapitalize="none"
-            autoComplete="password"
-            textContentType={mode === "login" ? "password" : "newPassword"}
-            placeholderTextColor="#71717a"
-            style={styles.input}
-          />
+          <View style={styles.inputWrap}>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder="••••••••"
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoComplete="password"
+              textContentType={mode === "login" ? "password" : "newPassword"}
+              placeholderTextColor="#71717a"
+              style={styles.input}
+            />
+            <Pressable
+              onPress={() => setShowPassword((prev) => !prev)}
+              style={({ pressed }) => [
+                styles.visibilityButton,
+                pressed && styles.visibilityButtonPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+            >
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={18}
+                color="#c4b5fd"
+              />
+            </Pressable>
+          </View>
+
+          <Animated.View
+            pointerEvents={mode === "signup" ? "auto" : "none"}
+            style={[
+              styles.confirmSection,
+              {
+                height: signupAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 86],
+                }),
+                opacity: signupAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 1],
+                }),
+              },
+            ]}
+          >
+            <Text style={styles.label}>Confirm password</Text>
+            <View style={styles.inputWrap}>
+              <TextInput
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="••••••••"
+                secureTextEntry={!showConfirmPassword}
+                autoCapitalize="none"
+                autoComplete="new-password"
+                textContentType="newPassword"
+                placeholderTextColor="#71717a"
+                style={styles.input}
+              />
+              <Pressable
+                onPress={() => setShowConfirmPassword((prev) => !prev)}
+                style={({ pressed }) => [
+                  styles.visibilityButton,
+                  pressed && styles.visibilityButtonPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  showConfirmPassword
+                    ? "Hide confirm password"
+                    : "Show confirm password"
+                }
+              >
+                <Ionicons
+                  name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                  size={18}
+                  color="#c4b5fd"
+                />
+              </Pressable>
+            </View>
+          </Animated.View>
 
           {message ? (
             <View style={styles.messageBox}>
@@ -173,7 +275,11 @@ export default function AuthScreen() {
                 ? "Need an account?"
                 : "Already have an account?"}
             </Text>
-            <Pressable onPress={() => setMode(mode === "login" ? "signup" : "login") }>
+            <Pressable
+              onPress={() =>
+                switchMode(mode === "login" ? "signup" : "login")
+              }
+            >
               <Text style={styles.footerLink}>
                 {mode === "login" ? "Sign up" : "Log in"}
               </Text>
@@ -275,8 +381,29 @@ const styles = StyleSheet.create({
     backgroundColor: "#0c0c0f",
     paddingHorizontal: 14,
     paddingVertical: 13,
+    paddingRight: 66,
     color: "#f4f4f5",
     fontSize: 15,
+  },
+  inputWrap: {
+    position: "relative",
+  },
+  visibilityButton: {
+    position: "absolute",
+    right: 12,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    minWidth: 28,
+    paddingHorizontal: 4,
+  },
+  visibilityButtonPressed: {
+    opacity: 0.75,
+    transform: [{ scale: 0.94 }],
+  },
+  confirmSection: {
+    overflow: "hidden",
   },
   messageBox: {
     marginTop: 16,

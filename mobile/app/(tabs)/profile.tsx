@@ -33,6 +33,8 @@ export default function ProfileScreen() {
   const tags = parseStack(techRaw);
 
   useEffect(() => {
+    let mounted = true;
+
     async function loadProfile() {
       if (!supabase) {
         setMessage("Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to mobile/.env.");
@@ -42,11 +44,15 @@ export default function ProfileScreen() {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        setHasUser(false);
+        if (mounted) {
+          setHasUser(false);
+        }
         return;
       }
 
-      setHasUser(true);
+      if (mounted) {
+        setHasUser(true);
+      }
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -54,7 +60,7 @@ export default function ProfileScreen() {
         .eq("id", user.id)
         .single();
 
-      if (profile) {
+      if (profile && mounted) {
         setDisplayName(profile.display_name ?? "");
         setHeadline(profile.headline ?? "");
         setTechRaw((profile.tech_stack ?? []).join(", ") || "React, TypeScript, Figma");
@@ -63,7 +69,39 @@ export default function ProfileScreen() {
     }
 
     loadProfile();
+
+    const {
+      data: { subscription },
+    } = supabase?.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setHasUser(Boolean(session?.user));
+      if (!session?.user) {
+        setMessage("You are signed out.");
+      }
+    }) ?? { data: { subscription: { unsubscribe: () => undefined } } };
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
+
+  async function onSignOut() {
+    if (!supabase) {
+      setMessage("Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to mobile/.env.");
+      return;
+    }
+
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setHasUser(false);
+    setMessage("Signed out.");
+  }
 
   async function onSave() {
     if (!supabase) {
@@ -186,6 +224,11 @@ export default function ProfileScreen() {
             <Text style={styles.saveText}>Save profile</Text>
           )}
         </Pressable>
+        {hasUser ? (
+          <Pressable style={styles.signOut} onPress={onSignOut}>
+            <Text style={styles.signOutText}>Sign out</Text>
+          </Pressable>
+        ) : null}
         {saved ? <Text style={styles.saved}>Profile saved successfully!</Text> : null}
       </View>
     </ScrollView>
@@ -263,5 +306,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   saveText: { color: "#fafafa", fontWeight: "600", fontSize: 16 },
+  signOut: {
+    marginTop: 10,
+    backgroundColor: "rgba(239,68,68,0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(239,68,68,0.35)",
+    paddingVertical: 14,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  signOutText: { color: "#fca5a5", fontWeight: "700", fontSize: 15 },
   saved: { marginTop: 12, textAlign: "center", color: "#71717a", fontSize: 12 },
 });
