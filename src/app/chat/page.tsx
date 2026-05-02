@@ -3,8 +3,7 @@ import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-import { ChatTimeline } from "./chat-timeline";
-import { sendMessage } from "./actions";
+import { ChatPanel } from "@/app/chat/ChatPanel";
 import { createClient } from "@/lib/supabase/server";
 import { ChatSidebar } from "@/components/ChatSidebar";
 
@@ -47,6 +46,7 @@ export default async function ChatPage({
   const requestedPartnerId = Array.isArray(resolvedParams.with)
     ? resolvedParams.with[0]
     : resolvedParams.with;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -61,7 +61,9 @@ export default async function ChatPage({
     .order("created_at", { ascending: false });
 
   const matches = (matchesData ?? []) as MatchRow[];
-  const partnerIds = [...new Set(matches.map((match) => getPartnerId(match, user.id)))];
+  const partnerIds: string[] = matches.length
+    ? [...new Set(matches.map((match) => getPartnerId(match, user.id)))]
+    : [];
 
   const { data: profileData } = partnerIds.length
     ? await supabase
@@ -100,17 +102,17 @@ export default async function ChatPage({
     : { data: [] as MessageRow[] };
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 lg:flex-row">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 lg:flex-row lg:items-start">
       <aside className="w-full rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xl shadow-black/10 lg:max-w-sm">
         <ChatSidebar
-          initialPartnerIds={partnerIds}
+          initialPartnerIds={partnerIds ?? []}
           initialProfiles={profileData ?? []}
           userId={user.id}
           selectedPartnerId={selectedPartnerId}
         />
       </aside>
 
-      <section className="flex min-h-[640px] flex-1 flex-col rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-2xl shadow-black/10 sm:p-6">
+      <section className="flex h-[640px] max-h-[640px] flex-1 flex-col rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-2xl shadow-black/10 sm:p-6 lg:h-[calc(100vh-10rem)] lg:max-h-[calc(100vh-10rem)]">
         {selectedPartnerId && selectedProfile && selectedRoom ? (
           <>
             <div className="border-b border-[var(--border)] pb-4">
@@ -127,33 +129,11 @@ export default async function ChatPage({
               ) : null}
             </div>
 
-            <ChatTimeline
-              key={selectedRoom.id}
+            <ChatPanel
               roomId={selectedRoom.id}
               currentUserId={user.id}
               initialMessages={messageData ?? []}
             />
-
-            <form
-              action={sendMessage.bind(null, selectedRoom.id, selectedPartnerId)}
-              className="border-t border-[var(--border)] pt-4"
-            >
-              <label className="sr-only" htmlFor="message">
-                Message
-              </label>
-              <div className="flex gap-3">
-                <textarea
-                  id="message"
-                  name="message"
-                  rows={2}
-                  placeholder="Write a message..."
-                  className="min-h-[52px] flex-1 resize-none rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3 text-sm text-[var(--foreground)] outline-none transition-colors placeholder:text-[var(--muted)] focus:border-[var(--accent)]"
-                />
-                <button className="inline-flex items-center justify-center rounded-2xl bg-[var(--accent)] px-5 text-sm font-medium text-[var(--accent-fg)] transition-opacity hover:opacity-90">
-                  Send
-                </button>
-              </div>
-            </form>
           </>
         ) : (
           <div className="flex flex-1 items-center justify-center rounded-[1.75rem] border border-dashed border-[var(--border)] bg-[var(--surface-2)] px-8 py-16 text-center">

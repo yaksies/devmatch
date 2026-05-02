@@ -81,7 +81,7 @@ export function ChatSidebar({ initialPartnerIds, initialProfiles, userId, select
         return () => {
             void supabase.removeChannel(channel);
         };
-    }, [userId]);
+    }, [userId, partnerIds, profileMap]);
 
     return (
         <>

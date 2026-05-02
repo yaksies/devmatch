@@ -1,5 +1,3 @@
-import { NextResponse } from "next/server";
-
 type ScrapedEvent = {
   id: string;
   name: string;
@@ -147,7 +145,7 @@ function extractImageUrl(innerHtml: string, baseUrl: string) {
   if (imageMatch?.[1]) {
     try {
       return new URL(imageMatch[1], baseUrl).toString();
-    } catch {}
+    } catch { }
   }
 
   // Check inline style background-image: url(...)
@@ -156,7 +154,7 @@ function extractImageUrl(innerHtml: string, baseUrl: string) {
     const cleaned = bgMatch[1].replace(/^["']|["']$/g, "").trim();
     try {
       return new URL(cleaned, baseUrl).toString();
-    } catch {}
+    } catch { }
   }
 
   return undefined;
@@ -355,7 +353,7 @@ async function probeImageFromPage(url: string, baseUrl: string) {
     if (ogMatch?.[1]) {
       try {
         return new URL(ogMatch[1], baseUrl).toString();
-      } catch {}
+      } catch { }
     }
 
     // Look for first <img src=> on the page
@@ -363,7 +361,7 @@ async function probeImageFromPage(url: string, baseUrl: string) {
     if (imgMatch?.[1]) {
       try {
         return new URL(imgMatch[1], baseUrl).toString();
-      } catch {}
+      } catch { }
     }
 
     // background-image in inline styles
@@ -372,7 +370,7 @@ async function probeImageFromPage(url: string, baseUrl: string) {
       const cleaned = bgMatch[1].replace(/^["']|["']$/g, "").trim();
       try {
         return new URL(cleaned, baseUrl).toString();
-      } catch {}
+      } catch { }
     }
 
     return undefined;
@@ -438,7 +436,7 @@ export async function scrapeHackathonEvents() {
       try {
         const found = await probeImageFromPage(r.url, r.url);
         if (found) r.image = found;
-      } catch {}
+      } catch { }
     }),
   );
 
