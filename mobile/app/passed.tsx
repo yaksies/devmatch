@@ -55,7 +55,7 @@ export default function PassedScreen() {
         items.map((row: any) => {
           const profile = row.profiles ?? { display_name: "Unknown", headline: "" };
           return (
-            <Pressable key={row.target_id} style={styles.card} onPress={() => router.push(`/user/${row.target_id}?from=passed`)}>
+            <Pressable key={row.target_id} style={styles.card} onPress={() => router.push({ pathname: "/user/[id]", params: { id: row.target_id, from: "passed" } })}>
               <Text style={styles.name}>{profile.display_name}</Text>
               {profile.headline ? <Text style={styles.headline}>{profile.headline}</Text> : null}
             </Pressable>

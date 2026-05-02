@@ -152,14 +152,14 @@ export default async function UserProfilePage({
 
         <div className="mt-8 flex gap-3">
           {canAcceptBack ? (
-            <form action={handleAcceptBack.bind(null, profile.id)}>
+            <form action={handleAcceptBack.bind(null, resolvedProfile.id)}>
               <button className="inline-flex items-center justify-center rounded-full bg-[var(--accent)] px-5 py-3 text-sm font-medium text-[var(--accent-fg)] transition-opacity hover:opacity-90">
                 Accept back
               </button>
             </form>
           ) : null}
           {canUndo ? (
-            <form action={handleUndoSwipe.bind(null, profile.id, resolvedSearchParams.from || "passed")}>
+            <form action={handleUndoSwipe.bind(null, resolvedProfile.id, resolvedSearchParams.from || "passed")}>
               <button className="inline-flex items-center justify-center rounded-full border border-[var(--border)] bg-transparent px-5 py-3 text-sm font-medium text-[var(--muted)] transition-colors hover:bg-[var(--muted-bg)] hover:text-[var(--foreground)]">
                 Retake swipe
               </button>

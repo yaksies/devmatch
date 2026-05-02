@@ -5,7 +5,7 @@ type ScrapedEvent = {
   name: string;
   date: string;
   location: string;
-  source: "mlh" | "devpost" | "other";
+  source: "mlh" | "devpost" | "other" | "luma";
   url: string;
   description?: string;
   image?: string;
@@ -34,6 +34,10 @@ const SOURCE_SEEDS: SourceSeed[] = [
   {
     source: "devpost",
     listingUrl: "https://devpost.com/hackathons",
+  },
+  {
+    source: "luma",
+    listingUrl: "https://lu.ma/explore",
   },
 ];
 
@@ -260,6 +264,28 @@ function extractDevpostCard(anchor: { href: string; text: string; html: string; 
   };
 }
 
+function extractLumaCard(anchor: { href: string; text: string; html: string; context?: string }): ListingCard | null {
+  const text = anchor.text;
+  const url = anchor.href;
+
+  if (!url.includes("lu.ma/")) {
+    return null;
+  }
+
+  const date = parseDateRange(text) || "Date coming soon";
+  const name = collapseRepeatedPrefix(titleFromUrl(url) || normalizeWhitespace(text.replace(date, "").trim())) || "Luma Event";
+
+  return {
+    name,
+    date,
+    location: "Location coming soon",
+    url,
+    source: "luma",
+    description: undefined,
+    image: extractImageUrl(anchor.context || anchor.html, anchor.href),
+  };
+}
+
 function isLikelyEventCard(anchor: { href: string; text: string }, source: ScrapedEvent["source"]) {
   if (!anchor.text) return false;
 
@@ -269,6 +295,10 @@ function isLikelyEventCard(anchor: { href: string; text: string }, source: Scrap
 
   if (source === "devpost") {
     return /\b(?:\d+\s+(?:days?|hours?)\s+left|[A-Z][a-z]{2}\s+\d{1,2}\s*-\s*[A-Z][a-z]{2}\s+\d{1,2},\s+\d{4})\b/i.test(anchor.text);
+  }
+
+  if (source === "luma") {
+    return /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+\d{1,2}\b/i.test(anchor.text) || anchor.href.includes("lu.ma/event");
   }
 
   return false;
@@ -289,6 +319,10 @@ async function scrapeSource(seed: SourceSeed) {
 
         if (seed.source === "devpost") {
           return extractDevpostCard(anchor);
+        }
+
+        if (seed.source === "luma") {
+          return extractLumaCard(anchor);
         }
 
         return null;

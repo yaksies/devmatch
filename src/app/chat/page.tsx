@@ -46,7 +46,6 @@ export default async function ChatPage({
   const requestedPartnerId = Array.isArray(resolvedParams.with)
     ? resolvedParams.with[0]
     : resolvedParams.with;
-
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -85,7 +84,7 @@ export default async function ChatPage({
   const selectedPartnerId =
     requestedPartnerId && partnerIds.includes(requestedPartnerId)
       ? requestedPartnerId
-      : undefined;
+      : partnerIds[0];
 
   const selectedMatch = selectedPartnerId
     ? matches.find((match) => getPartnerId(match, user.id) === selectedPartnerId)

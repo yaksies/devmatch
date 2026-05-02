@@ -99,8 +99,8 @@ export const ChatTimeline = forwardRef<ChatTimelineHandle, Props>(
             >
               <div
                 className={`max-w-[80%] rounded-3xl px-4 py-3 text-sm leading-6 ${isMine
-                    ? "bg-[var(--accent)] text-[var(--accent-fg)]"
-                    : "bg-[var(--muted-bg)] text-[var(--foreground)]"
+                  ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                  : "bg-[var(--muted-bg)] text-[var(--foreground)]"
                   }`}
               >
                 {message.body}
@@ -112,7 +112,7 @@ export const ChatTimeline = forwardRef<ChatTimelineHandle, Props>(
     );
 
     return (
-      <div ref={containerRef} className="flex-1 overflow-y-auto py-5">
+      <div ref={containerRef} className="h-full overflow-y-auto py-5">
         <style>{`
           @keyframes message-in {
             from { opacity: 0; transform: translateY(10px) scale(0.97); }
