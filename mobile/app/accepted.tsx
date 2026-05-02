@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 
 import { supabase } from "@/lib/supabase";
 
-export default function PassedScreen() {
+export default function AcceptedScreen() {
   const [items, setItems] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -24,12 +24,15 @@ export default function PassedScreen() {
       }
 
       const { data, error } = await supabase
-        .from("swipes")
-        .select("target_id, created_at, profiles(display_name, headline, avatar_url)")
-        .eq("swiper_id", userId)
-        .eq("direction", "pass")
-        .order("created_at", { ascending: false });
 
+        .from("swipes")
+        .select("target_id, created_at, profiles!swipes_target_id_fkey(display_name, headline, avatar_url)")
+        .eq("swiper_id", userId)
+        .eq("direction", "like")
+        .order("created_at", { ascending: false });
+      console.log("Current User ID:", userId);
+      console.log("Raw Data from Supabase:", data);
+      console.log("Supabase Error:", error);
       if (!mounted) return;
       if (error) {
         setItems([]);
@@ -47,8 +50,8 @@ export default function PassedScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.scroll} style={styles.root}>
-      <Text style={styles.title}>People you passed</Text>
-      <Text style={styles.sub}>A historical list of people you swiped left on.</Text>
+      <Text style={styles.title}>People you accepted</Text>
+      <Text style={styles.sub}>People you swiped right on.</Text>
 
       {loading ? (
         <ActivityIndicator style={{ marginTop: 24 }} />
@@ -56,7 +59,7 @@ export default function PassedScreen() {
         items.map((row: any) => {
           const profile = row.profiles ?? { display_name: "Unknown", headline: "" };
           return (
-            <Pressable key={row.target_id} style={styles.card} onPress={() => router.push(`/user/${row.target_id}?from=passed`)}>
+            <Pressable key={row.target_id} style={styles.card} onPress={() => router.push(`/user/${row.target_id}?from=accepted`)}>
               <Text style={styles.name}>{profile.display_name}</Text>
               {profile.headline ? <Text style={styles.headline}>{profile.headline}</Text> : null}
             </Pressable>
@@ -65,7 +68,7 @@ export default function PassedScreen() {
       ) : (
         <View style={styles.blank}>
           <Text style={styles.blankTitle}>There&apos;s nothing to be seen here...</Text>
-          <Text style={styles.blankSub}>No passed people yet.</Text>
+          <Text style={styles.blankSub}>No accepted people yet.</Text>
         </View>
       )}
     </ScrollView>

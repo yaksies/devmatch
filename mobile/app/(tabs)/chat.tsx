@@ -57,7 +57,7 @@ export default function ChatScreen() {
       const partnerId = match.user_a === user.id ? match.user_b : match.user_a;
       const profile = profiles.find(p => p.id === partnerId);
       const room = rooms.find(r => r.match_id === match.id);
-      
+
       return {
         room_id: room?.id ?? "",
         partner_id: partnerId,

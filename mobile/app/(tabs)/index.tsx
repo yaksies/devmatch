@@ -65,11 +65,18 @@ export default function HomeScreen() {
         </Pressable>
       </View>
       {hasUser ? (
-        <View style={[styles.row, { marginTop: 14 }]}> 
+        <View style={[styles.row, { marginTop: 14 }]}>
           <Pressable style={styles.secondary} onPress={() => router.push("/passed")}>
             <Text style={styles.secondaryText}>Passed</Text>
           </Pressable>
-          <Pressable style={styles.secondary} onPress={() => router.push("/accepted")}>
+
+          <Pressable
+            style={[styles.secondary, { zIndex: 999, elevation: 999 }]}
+            onPress={() => {
+              console.log("Im being touched");
+              router.push("/accepted");
+            }}
+          >
             <Text style={styles.secondaryText}>Accepted</Text>
           </Pressable>
         </View>
