@@ -21,11 +21,15 @@ export default function ChatRoomScreen() {
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
-    async function loadData() {
-      if (!supabase) return;
+    setMessages([]);
+    setLoading(true);
+    let channel: any;
+
+    async function initChat() {
+      if (!supabase || !id) return;
+
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      setCurrentUserId(user.id);
+      if (user) setCurrentUserId(user.id);
 
       const { data: initialMessages } = await supabase
         .from("chat_messages")
@@ -33,13 +37,10 @@ export default function ChatRoomScreen() {
         .eq("room_id", id)
         .order("created_at", { ascending: true });
 
-      if (initialMessages) {
-        setMessages(initialMessages);
-      }
+      if (initialMessages) setMessages(initialMessages);
       setLoading(false);
 
-      // Subscribe to real-time updates
-      const channel = supabase
+      channel = supabase
         .channel(`chat-room-${id}`)
         .on(
           "postgres_changes",
@@ -47,27 +48,24 @@ export default function ChatRoomScreen() {
             event: "INSERT",
             schema: "public",
             table: "chat_messages",
-            filter: `room_id=eq.${id}`,
+            filter: `room_id=eq.'${id}'`,
           },
           (payload) => {
             const nextMessage = payload.new as MessageRow;
             setMessages((current) => {
-              if (current.some((msg) => msg.id === nextMessage.id)) {
-                return current;
-              }
+              if (current.some((msg) => msg.id === nextMessage.id)) return current;
               return [...current, nextMessage];
             });
           }
         )
         .subscribe();
-
-      return () => {
-        if (!supabase) return;
-        void supabase.removeChannel(channel);
-      };
     }
 
-    loadData();
+    initChat();
+
+    return () => {
+      if (supabase && channel) supabase.removeChannel(channel);
+    };
   }, [id]);
 
   const sendMessage = async () => {
@@ -82,9 +80,7 @@ export default function ChatRoomScreen() {
       body: text,
     });
 
-    if (error) {
-      console.error("Error sending message:", error.message);
-    }
+    if (error) console.error("Error sending message:", error.message);
   };
 
   const renderMessage = useCallback(({ item }: { item: MessageRow }) => {
@@ -104,13 +100,13 @@ export default function ChatRoomScreen() {
     return (
       <View style={[styles.root, styles.center]}>
         <Stack.Screen options={{ title: name || "Chat" }} />
-        <ActivityIndicator color="#c4b5fd" />
+        <ActivityIndicator color="#c4b5fd" size="large" />
       </View>
     );
   }
 
   return (
-    <View style={styles.root}>
+    <View style={styles.root} key={id}>
       <Stack.Screen options={{ title: name || "Chat" }} />
       <KeyboardAvoidingView
         style={styles.container}
@@ -156,12 +152,7 @@ const styles = StyleSheet.create({
   messageRow: { flexDirection: "row", marginBottom: 12 },
   messageRowMine: { justifyContent: "flex-end" },
   messageRowTheirs: { justifyContent: "flex-start" },
-  messageBubble: {
-    maxWidth: "80%",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
+  messageBubble: { maxWidth: "80%", paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
   messageBubbleMine: { backgroundColor: "#c4b5fd" },
   messageBubbleTheirs: { backgroundColor: "#27272a" },
   messageText: { fontSize: 15, lineHeight: 22 },
@@ -195,9 +186,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 12,
-    marginBottom: 0,
   },
-  sendButtonDisabled: {
-    backgroundColor: "#3f3f46",
-  },
+  sendButtonDisabled: { backgroundColor: "#3f3f46" },
 });

@@ -134,5 +134,23 @@ create policy "Match members can send messages"
     )
   );
 
--- Realtime: enable replication for chat_messages in Dashboard → Database → Replication, or:
+-- Create a chat room automatically when a match is inserted.
+create function public.create_chat_room_for_match()
+returns trigger language plpgsql as $$
+begin
+  insert into public.chat_rooms (match_id)
+  values (new.id);
+  return new;
+exception when unique_violation then
+  return new;
+end;
+$$;
+
+create trigger create_chat_room_after_match_insert
+after insert on public.matches
+for each row
+execute procedure public.create_chat_room_for_match();
+
+-- Realtime: enable replication for matches and chat_messages in Dashboard → Database → Replication, or:
+alter publication supabase_realtime add table public.matches;
 alter publication supabase_realtime add table public.chat_messages;

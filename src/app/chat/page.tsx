@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 import { ChatTimeline } from "./chat-timeline";
 import { sendMessage } from "./actions";
 import { createClient } from "@/lib/supabase/server";
@@ -39,8 +41,13 @@ function getPartnerId(match: MatchRow, userId: string) {
 export default async function ChatPage({
   searchParams,
 }: {
-  searchParams: { with?: string };
+  searchParams: Promise<{ with?: string }>;
 }) {
+  const resolvedParams = await searchParams;
+  const requestedPartnerId = Array.isArray(resolvedParams.with)
+    ? resolvedParams.with[0]
+    : resolvedParams.with;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -74,9 +81,10 @@ export default async function ChatPage({
   const profileMap = new Map((profileData ?? []).map((profile) => [profile.id, profile]));
   const roomMap = new Map((roomData ?? []).map((room) => [room.match_id, room]));
 
-  const selectedPartnerId = searchParams.with && profileMap.has(searchParams.with)
-    ? searchParams.with
-    : partnerIds[0];
+  const selectedPartnerId =
+    requestedPartnerId && partnerIds.includes(requestedPartnerId)
+      ? requestedPartnerId
+      : undefined;
 
   const selectedMatch = selectedPartnerId
     ? matches.find((match) => getPartnerId(match, user.id) === selectedPartnerId)
@@ -97,7 +105,7 @@ export default async function ChatPage({
       <aside className="w-full rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xl shadow-black/10 lg:max-w-sm">
         <ChatSidebar
           initialPartnerIds={partnerIds}
-          initialProfileMap={profileMap}
+          initialProfiles={profileData ?? []}
           userId={user.id}
           selectedPartnerId={selectedPartnerId}
         />
@@ -121,6 +129,7 @@ export default async function ChatPage({
             </div>
 
             <ChatTimeline
+              key={selectedRoom.id}
               roomId={selectedRoom.id}
               currentUserId={user.id}
               initialMessages={messageData ?? []}

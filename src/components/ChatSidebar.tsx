@@ -19,14 +19,16 @@ type Match = {
 
 type Props = {
     initialPartnerIds: string[];
-    initialProfileMap: Map<string, Profile>;
+    initialProfiles: Profile[];   // ← plain array instead of Map
     userId: string;
     selectedPartnerId?: string;
 };
 
-export function ChatSidebar({ initialPartnerIds, initialProfileMap, userId, selectedPartnerId }: Props) {
-    const [partnerIds, setPartnerIds] = useState(initialPartnerIds);
-    const [profileMap, setProfileMap] = useState(initialProfileMap);
+export function ChatSidebar({ initialPartnerIds, initialProfiles, userId, selectedPartnerId }: Props) {
+    const [partnerIds, setPartnerIds] = useState<string[]>(initialPartnerIds ?? []);
+    const [profileMap, setProfileMap] = useState<Map<string, Profile>>(
+        () => new Map((initialProfiles ?? []).map(p => [p.id, p]))
+    );
 
     useEffect(() => {
         const supabase = createClient();
