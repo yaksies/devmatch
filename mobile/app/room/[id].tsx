@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, Stack } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { SectionBackButton } from "@/components/SectionBackButton";
 
 type MessageRow = {
   id: string;
@@ -98,20 +100,24 @@ export default function ChatRoomScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.root, styles.center]}>
-        <Stack.Screen options={{ title: name || "Chat" }} />
-        <ActivityIndicator color="#c4b5fd" size="large" />
-      </View>
+      <SafeAreaView style={styles.root} edges={["top"]}>
+        <SectionBackButton style={styles.backButton} />
+        <View style={[styles.root, styles.center]}>
+          <Stack.Screen options={{ title: name || "Chat" }} />
+          <ActivityIndicator color="#c4b5fd" size="large" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.root} key={id}>
+    <SafeAreaView style={styles.root} edges={["top"]} key={id}>
+      <SectionBackButton style={styles.backButton} />
       <Stack.Screen options={{ title: name || "Chat" }} />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
         <FlatList
           ref={flatListRef}
@@ -140,13 +146,14 @@ export default function ChatRoomScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0c0c0f" },
   center: { justifyContent: "center", alignItems: "center" },
+  backButton: { marginLeft: 16, marginTop: 4, marginBottom: 4 },
   container: { flex: 1 },
   messageList: { padding: 16, gap: 12 },
   messageRow: { flexDirection: "row", marginBottom: 12 },

@@ -1,6 +1,7 @@
 import { Link, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { supabase } from "@/lib/supabase";
 
@@ -43,52 +44,51 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.scroll}
-      style={styles.root}
-    >
-      <Text style={styles.kicker}>Hackathon teammate matching</Text>
-      <Text style={styles.title}>
-        DevMatch — find your crew before the opening keynote.
-      </Text>
-      <Text style={styles.body}>
-        Swipe through people at the same event, match on skills, and
-        coordinate in chat. This app shares types and Supabase with the Next.js
-        web app in the monorepo.
-      </Text>
-      <View style={styles.row}>
-        <Pressable style={styles.primary} onPress={() => router.push("/discover")}>
-          <Text style={styles.primaryText}>Open discover</Text>
-        </Pressable>
-        <Pressable style={styles.secondary} onPress={() => router.push("/profile")}>
-          <Text style={styles.secondaryText}>Edit profile</Text>
-        </Pressable>
-      </View>
-      {hasUser ? (
-        <View style={[styles.row, { marginTop: 14 }]}>
-          <Pressable style={styles.secondary} onPress={() => router.push("/passed")}>
-            <Text style={styles.secondaryText}>Passed</Text>
+    <SafeAreaView style={styles.root} edges={["top"]}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <Text style={styles.kicker}>Hackathon teammate matching</Text>
+        <Text style={styles.title}>
+          DevMatch — find your crew before the opening keynote.
+        </Text>
+        <Text style={styles.body}>
+          Swipe through people at the same event, match on skills, and
+          coordinate in chat. This app shares types and Supabase with the Next.js
+          web app in the monorepo.
+        </Text>
+        <View style={styles.row}>
+          <Pressable style={styles.primary} onPress={() => router.push("/discover")}>
+            <Text style={styles.primaryText}>Open discover</Text>
           </Pressable>
-
-          <Pressable
-            style={[styles.secondary, { zIndex: 999, elevation: 999 }]}
-            onPress={() => {
-              console.log("Im being touched");
-              router.push("/accepted");
-            }}
-          >
-            <Text style={styles.secondaryText}>Accepted</Text>
+          <Pressable style={styles.secondary} onPress={() => router.push("/profile")}>
+            <Text style={styles.secondaryText}>Edit profile</Text>
           </Pressable>
         </View>
-      ) : null}
-      {!hasUser ? (
-        <Link href={"/auth" as any} asChild>
-          <Pressable style={styles.authButton}>
-            <Text style={styles.authButtonText}>Log in / Sign up</Text>
-          </Pressable>
-        </Link>
-      ) : null}
-    </ScrollView>
+        {hasUser ? (
+          <View style={[styles.row, { marginTop: 14 }]}>
+            <Pressable style={styles.secondary} onPress={() => router.push("/passed")}>
+              <Text style={styles.secondaryText}>Passed</Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.secondary, { zIndex: 999, elevation: 999 }]}
+              onPress={() => {
+                console.log("Im being touched");
+                router.push("/accepted");
+              }}
+            >
+              <Text style={styles.secondaryText}>Accepted</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {!hasUser ? (
+          <Link href={"/auth" as any} asChild>
+            <Pressable style={styles.authButton}>
+              <Text style={styles.authButtonText}>Log in / Sign up</Text>
+            </Pressable>
+          </Link>
+        ) : null}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
