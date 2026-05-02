@@ -22,6 +22,7 @@ const FALLBACK_EVENTS: HackathonEvent[] = [
     location: "Cambridge, MA",
     source: "mlh",
     url: "https://www.mlh.com/seasons/2026/events",
+    image: "https://images.mlh.io/events/hackmit/hackmit-2024-square.jpg",
   },
   {
     id: "fallback-2",
@@ -30,6 +31,7 @@ const FALLBACK_EVENTS: HackathonEvent[] = [
     location: "Online",
     source: "devpost",
     url: "https://orion-build-challenge.devpost.com/",
+    image: "https://challengepost-s3-challengepost.netdna-ssl.com/photos/production/challenge_photos/003/292/890/datas/original.jpg",
   },
   {
     id: "fallback-3",
@@ -38,6 +40,27 @@ const FALLBACK_EVENTS: HackathonEvent[] = [
     location: "Amherst, MA",
     source: "mlh",
     url: "https://www.mlh.com/seasons/2026/events",
+    image: "https://images.mlh.io/events/hackumass/hackumass-2024-square.jpg",
+  },
+  {
+    id: "fallback-4",
+    name: "Hack the North",
+    date: "Sep 12-14, 2026",
+    location: "Waterloo, ON, Canada",
+    source: "other",
+    url: "https://hackthenorth.com",
+    image: "https://hackthenorth.com/static/media/hero.jpg",
+    description: "Canada's biggest hackathon, hosted at the University of Waterloo.",
+  },
+  {
+    id: "fallback-5",
+    name: "PennApps",
+    date: "Sep 5-7, 2026",
+    location: "Philadelphia, PA",
+    source: "other",
+    url: "https://pennapps.com",
+    image: "https://pennapps.com/static/images/hero.jpg",
+    description: "One of the oldest college hackathons, held at the University of Pennsylvania.",
   },
 ];
 
@@ -146,7 +169,8 @@ export function EventsFeed() {
                 <Image source={{ uri: event.image }} style={styles.image} resizeMode="cover" />
               ) : (
                 <View style={styles.noImageWrap}>
-                  <Text style={styles.noImage}>NO IMAGE</Text>
+                  <Text style={styles.noImageEmoji}>🖥️</Text>
+                  <Text style={styles.noImage}>{event.source === "mlh" ? "MLH Event" : event.source === "devpost" ? "Devpost" : "Hackathon"}</Text>
                 </View>
               )}
               <View style={styles.overlay} />
@@ -178,6 +202,7 @@ export function EventsFeed() {
 const styles = StyleSheet.create({
   section: {
     width: "100%",
+    alignSelf: "stretch",
     marginTop: 36,
   },
   headingRow: {
@@ -240,12 +265,19 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#1a1a24",
+    gap: 8,
+  },
+  noImageEmoji: {
+    fontSize: 32,
+    opacity: 0.5,
   },
   noImage: {
-    color: "#a1a1aa",
+    color: "#71717a",
     fontSize: 11,
     fontWeight: "700",
     letterSpacing: 2,
+    textTransform: "uppercase",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,

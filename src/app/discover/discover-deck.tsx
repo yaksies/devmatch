@@ -20,6 +20,7 @@ export function DiscoverDeck({ initialProfiles }: Props) {
   const wheelDragX = useRef(0);
   const wheelEndTimer = useRef<number | null>(null);
   const swipeCooldownUntil = useRef(0);
+  const committedRef = useRef(false);
 
   const current = initialProfiles[index];
   const next = initialProfiles[index + 1];
@@ -33,7 +34,8 @@ export function DiscoverDeck({ initialProfiles }: Props) {
   }, []);
 
   const commitSwipe = (direction: "like" | "pass") => {
-    if (!current || swipeDir) return;
+    if (!current || swipeDir || committedRef.current) return;
+    committedRef.current = true;
 
     const targetId = current.id;
 
@@ -48,6 +50,7 @@ export function DiscoverDeck({ initialProfiles }: Props) {
       wheelDragX.current = 0;
       setSwipeDir(null);
       setIsPromotingNext(false);
+      committedRef.current = false;
     }, 220);
 
     void (async () => {
@@ -87,6 +90,7 @@ export function DiscoverDeck({ initialProfiles }: Props) {
 
     if (Math.abs(wheelDragX.current) > 120) {
       void commitSwipe(wheelDragX.current > 0 ? "like" : "pass");
+      wheelDragX.current = 0;
       return;
     }
 

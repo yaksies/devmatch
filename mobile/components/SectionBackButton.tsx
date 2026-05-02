@@ -3,14 +3,15 @@ import { Pressable, StyleProp, StyleSheet, Text, ViewStyle } from "react-native"
 
 type Props = {
     label?: string;
+    href?: string;
     style?: StyleProp<ViewStyle>;
 };
 
-export function SectionBackButton({ label = "← Back", style }: Props) {
+export function SectionBackButton({ label = "← Chats", href = "/(tabs)/chat", style }: Props) {
     const router = useRouter();
 
     return (
-        <Pressable style={[styles.button, style]} onPress={() => router.replace("/")}>
+        <Pressable style={[styles.button, style]} onPress={() => router.push(href as any)}>
             <Text style={styles.text}>{label}</Text>
         </Pressable>
     );

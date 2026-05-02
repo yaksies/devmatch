@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef } from "react";
-import { ChatTimeline, ChatTimelineHandle } from "./chat-timeline";
+import { useState } from "react";
+import { ChatTimeline } from "./chat-timeline";
 import { ChatMessageBox } from "@/components/ChatMessageBox";
 
 type MessageRow = {
@@ -10,6 +10,7 @@ type MessageRow = {
     sender_id: string;
     body: string;
     created_at: string;
+    pinned: boolean;
 };
 
 type Props = {
@@ -19,20 +20,20 @@ type Props = {
 };
 
 export function ChatPanel({ roomId, currentUserId, initialMessages }: Props) {
-    const timelineRef = useRef<ChatTimelineHandle | null>(null);
+    const [, setPinnedMessages] = useState<MessageRow[]>([]);
 
     return (
         <div className="flex h-full flex-col overflow-hidden">
             <ChatTimeline
-                ref={timelineRef}
                 roomId={roomId}
                 currentUserId={currentUserId}
                 initialMessages={initialMessages}
+                onPinnedChange={setPinnedMessages}
             />
+            {/* ✅ No ref or onMessageSent — realtime subscription handles new messages */}
             <ChatMessageBox
                 roomId={roomId}
                 currentUserId={currentUserId}
-                onMessageSent={(msg) => timelineRef.current?.addMessage(msg as MessageRow)}
             />
         </div>
     );

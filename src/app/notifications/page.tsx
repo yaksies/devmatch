@@ -4,10 +4,6 @@ import { redirect } from "next/navigation";
 import { NotificationCarousel } from "@/components/NotificationCarousel";
 import { createClient } from "@/lib/supabase/server";
 
-type Row = {
-  swiper_id: string;
-};
-
 export default async function NotificationsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -16,21 +12,38 @@ export default async function NotificationsPage() {
     redirect("/login");
   }
 
-  const { data: swipes } = await supabase
+  // 1. Get people who liked me
+  const { data: inboundLikes } = await supabase
     .from("swipes")
     .select("swiper_id")
     .eq("target_id", user.id)
-    .eq("direction", "like")
-    .order("created_at", { ascending: false });
+    .eq("direction", "like");
 
-  const swiperIds = [...new Set((swipes as Row[] | null | undefined)?.map((row) => row.swiper_id) ?? [])];
+  let profiles: any[] = [];
 
-  const { data: profiles } = swiperIds.length
-    ? await supabase
-      .from("profiles")
-      .select("id, display_name, headline, tech_stack, interests")
-      .in("id", swiperIds)
-    : { data: [] as Array<{ id: string; display_name: string; headline: string | null; tech_stack: string[] | null; interests: string | null }> };
+  if (inboundLikes && inboundLikes.length > 0) {
+    const potentialSwiperIds = [...new Set(inboundLikes.map((row: any) => row.swiper_id))];
+
+    // 2. Get my swipes to those people (any direction: like or pass)
+    // We only show "pending" notifications - people I haven't swiped on yet.
+    const { data: outboundSwipes } = await supabase
+      .from("swipes")
+      .select("target_id")
+      .eq("swiper_id", user.id)
+      .in("target_id", potentialSwiperIds);
+
+    const swipedIds = new Set((outboundSwipes || []).map((s: any) => s.target_id));
+    const pendingSwiperIds = potentialSwiperIds.filter((id) => !swipedIds.has(id));
+
+    if (pendingSwiperIds.length > 0) {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id, display_name, headline, tech_stack, interests")
+        .in("id", pendingSwiperIds);
+      
+      profiles = profileData || [];
+    }
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col px-4 py-10 sm:px-6">
@@ -39,12 +52,12 @@ export default async function NotificationsPage() {
           ← Back
         </Link>
         <h1 className="text-xl font-semibold tracking-tight text-[var(--foreground)]">
-          {profiles && profiles.length > 0 ? "New notifications" : "Who accepted you"}
+          {profiles.length > 0 ? "New notifications" : "No new notifications"}
         </h1>
         <div className="w-12" />
       </div>
 
-      <NotificationCarousel profiles={profiles ?? []} userId={user.id} />
+      <NotificationCarousel profiles={profiles} userId={user.id} />
     </div>
   );
 }

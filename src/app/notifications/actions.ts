@@ -170,3 +170,30 @@ export async function deleteSwipe(targetId: string) {
 
   return { success: true };
 }
+
+export async function passBack(targetId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  console.log(`[passBack] User ${user.id} passing on ${targetId}`);
+
+  const { error } = await supabase.from("swipes").upsert({
+    swiper_id: user.id,
+    target_id: targetId,
+    direction: "pass",
+  });
+
+  if (error) {
+    console.error("[passBack] Error creating pass swipe:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/notifications");
+  revalidatePath("/discover");
+
+  return { success: true };
+}

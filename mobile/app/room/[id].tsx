@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, Stack } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/lib/supabase";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
@@ -20,53 +21,88 @@ export default function ChatRoomScreen() {
   const [inputText, setInputText] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [realtimeStatus, setRealtimeStatus] = useState<string>("connecting");
   const flatListRef = useRef<FlatList>(null);
+  const channelRef = useRef<any>(null);
 
-  useEffect(() => {
-    setMessages([]);
-    setLoading(true);
-    let channel: any;
+  // Setup realtime subscription
+  const setupRealtime = useCallback(async () => {
+    if (!supabase || !id) return;
 
-    async function initChat() {
-      if (!supabase || !id) return;
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) setCurrentUserId(user.id);
-
-      const { data: initialMessages } = await supabase
-        .from("chat_messages")
-        .select("*")
-        .eq("room_id", id)
-        .order("created_at", { ascending: true });
-
-      if (initialMessages) setMessages(initialMessages);
-      setLoading(false);
-
-      channel = supabase
-        .channel(`chat-room-${id}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "chat_messages",
-            filter: `room_id=eq.'${id}'`,
-          },
-          (payload) => {
-            const nextMessage = payload.new as MessageRow;
-            setMessages((current) => {
-              if (current.some((msg) => msg.id === nextMessage.id)) return current;
-              return [...current, nextMessage];
-            });
-          }
-        )
-        .subscribe();
+    // Clean up existing channel if any
+    if (channelRef.current) {
+      console.log("[Realtime] Removing old channel for room:", id);
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
     }
 
-    initChat();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) setCurrentUserId(user.id);
 
+    const { data: initialMessages } = await supabase
+      .from("chat_messages")
+      .select("*")
+      .eq("room_id", id)
+      .order("created_at", { ascending: true });
+
+    if (initialMessages) setMessages(initialMessages);
+    setLoading(false);
+
+    console.log("[Realtime] Subscribing to room:", id);
+
+    const channel = supabase
+      .channel(`chat-room-${id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_messages",
+          filter: `room_id=eq.${id}`,
+        },
+        (payload) => {
+          console.log("[Realtime] INSERT received:", payload.new);
+          const nextMessage = payload.new as MessageRow;
+          setMessages((current) => {
+            if (current.some((msg) => msg.id === nextMessage.id)) return current;
+            return [...current, nextMessage];
+          });
+        }
+      )
+      .subscribe((status, err) => {
+        console.log("[Realtime] Status:", status, err ?? "");
+        setRealtimeStatus(status);
+        if (status === "CHANNEL_ERROR") {
+          console.error("[Realtime] Channel error:", err);
+        }
+        if (status === "TIMED_OUT") {
+          console.error("[Realtime] Timed out — WebSocket likely not reaching Supabase");
+        }
+      });
+
+    channelRef.current = channel;
+  }, [id]);
+
+  // Use useFocusEffect to ensure realtime is active when screen is in focus
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      setupRealtime();
+
+      return () => {
+        // Don't clean up the channel here - keep it alive in the background
+      };
+    }, [setupRealtime])
+  );
+
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
-      if (supabase && channel) supabase.removeChannel(channel);
+      if (supabase && channelRef.current) {
+        console.log("[Realtime] Removing channel on unmount for room:", id);
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [id]);
 
@@ -75,14 +111,26 @@ export default function ChatRoomScreen() {
     if (!text || !supabase || !currentUserId) return;
 
     setInputText("");
+    console.log("[Chat] Sending message to room:", id);
 
-    const { error } = await supabase.from("chat_messages").insert({
-      room_id: id,
-      sender_id: currentUserId,
-      body: text,
-    });
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .insert({ room_id: id, sender_id: currentUserId, body: text })
+      .select("*")
+      .single();
 
-    if (error) console.error("Error sending message:", error.message);
+    if (error) {
+      console.error("[Chat] Send error:", error.message);
+    } else {
+      // Optimistically add own message in case realtime is delayed
+      console.log("[Chat] Inserted message:", data);
+      if (data) {
+        setMessages((current) => {
+          if (current.some((msg) => msg.id === data.id)) return current;
+          return [...current, data as MessageRow];
+        });
+      }
+    }
   };
 
   const renderMessage = useCallback(({ item }: { item: MessageRow }) => {
@@ -97,6 +145,16 @@ export default function ChatRoomScreen() {
       </View>
     );
   }, [currentUserId]);
+
+  // Scroll to bottom whenever messages change (new message received)
+  useEffect(() => {
+    if (messages.length > 0) {
+      const timer = setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [messages.length]);
 
   if (loading) {
     return (
@@ -119,14 +177,25 @@ export default function ChatRoomScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
+        {/* Debug banner — remove once realtime is confirmed working */}
+        {__DEV__ && (
+          <View style={[
+            styles.debugBanner,
+            realtimeStatus === "SUBSCRIBED" ? styles.debugOk : styles.debugWarn
+          ]}>
+            <Text style={styles.debugText}>Realtime: {realtimeStatus}</Text>
+          </View>
+        )}
+
         <FlatList
           ref={flatListRef}
           data={messages}
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
           contentContainerStyle={styles.messageList}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          scrollEnabled={true}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+          onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
         />
         <View style={styles.inputContainer}>
           <TextInput
@@ -195,4 +264,12 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   sendButtonDisabled: { backgroundColor: "#3f3f46" },
+  debugBanner: {
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    alignItems: "center",
+  },
+  debugOk: { backgroundColor: "#052e16" },
+  debugWarn: { backgroundColor: "#450a0a" },
+  debugText: { color: "#fff", fontSize: 11, fontWeight: "600" },
 });

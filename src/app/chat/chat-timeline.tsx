@@ -28,6 +28,7 @@ export const ChatTimeline = forwardRef<ChatTimelineHandle, Props>(
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
     const bottomRef = useRef<HTMLDivElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const initialScrollDone = useRef<string | null>(null);
 
     const addMessage = useCallback((msg: MessageRow) => {
       setMessages((current) =>
@@ -70,6 +71,7 @@ export const ChatTimeline = forwardRef<ChatTimelineHandle, Props>(
       return () => { void supabase.removeChannel(channel); };
     }, [roomId, addMessage]);
 
+    // Scroll to bottom when new messages arrive (only if already near bottom)
     useEffect(() => {
       const container = containerRef.current;
       if (!container) return;
@@ -79,6 +81,14 @@ export const ChatTimeline = forwardRef<ChatTimelineHandle, Props>(
         bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
       }
     }, [messages]);
+
+    // Scroll to bottom on initial mount so most recent message is visible
+    useEffect(() => {
+      if (messages.length > 0 && initialScrollDone.current !== roomId) {
+        bottomRef.current?.scrollIntoView({ behavior: "instant", block: "end" });
+        initialScrollDone.current = roomId;
+      }
+    }, [messages, roomId]);
 
     // Close context menu on outside click
     useEffect(() => {
