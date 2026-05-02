@@ -26,6 +26,10 @@ export default function ProfileScreen() {
   const [headline, setHeadline] = useState("");
   const [techRaw, setTechRaw] = useState("React, TypeScript, Figma");
   const [interests, setInterests] = useState("");
+  const [discord, setDiscord] = useState("");
+  const [email, setEmail] = useState("");
+  const [linkedin, setLinkedin] = useState("");
+  const [projects, setProjects] = useState("");
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -69,7 +73,7 @@ export default function ProfileScreen() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name, headline, tech_stack, interests")
+        .select("display_name, headline, tech_stack, interests, discord, email, linkedin, projects")
         .eq("id", user.id)
         .single();
 
@@ -78,6 +82,10 @@ export default function ProfileScreen() {
         setHeadline(profile.headline ?? "");
         setTechRaw((profile.tech_stack ?? []).join(", ") || "React, TypeScript, Figma");
         setInterests(profile.interests ?? "");
+        setDiscord(profile.discord ?? "");
+        setEmail(profile.email ?? "");
+        setLinkedin(profile.linkedin ?? "");
+        setProjects(profile.projects ?? "");
       }
     }
 
@@ -142,6 +150,10 @@ export default function ProfileScreen() {
       headline,
       tech_stack: tags,
       interests,
+      discord,
+      email,
+      linkedin,
+      projects,
       updated_at: new Date().toISOString(),
     });
 
@@ -239,6 +251,51 @@ export default function ProfileScreen() {
           style={[styles.input, styles.textarea]}
         />
 
+        <Text style={styles.label}>Discord username</Text>
+        <TextInput
+          value={discord}
+          onChangeText={setDiscord}
+          placeholder="yourname#1234 or yourname (optional)"
+          placeholderTextColor="#71717a"
+          style={styles.input}
+        />
+
+        <Text style={styles.label}>Email</Text>
+        <TextInput
+          value={email}
+          onChangeText={setEmail}
+          placeholder="your@email.com (optional)"
+          placeholderTextColor="#71717a"
+          keyboardType="email-address"
+          style={styles.input}
+        />
+
+        <Text style={styles.label}>LinkedIn</Text>
+        <TextInput
+          value={linkedin}
+          onChangeText={setLinkedin}
+          placeholder="linkedin.com/in/yourprofile (optional)"
+          placeholderTextColor="#71717a"
+          style={styles.input}
+        />
+
+        <Text style={styles.label}>Previous projects & experience</Text>
+        <TextInput
+          value={projects}
+          onChangeText={setProjects}
+          placeholder="Projects, internships, hackathons, or anything else not on your resume…"
+          placeholderTextColor="#71717a"
+          multiline
+          style={[styles.input, styles.textarea]}
+        />
+
+        <Text style={styles.label}>Resume</Text>
+        <View style={styles.resumeNote}>
+          <Text style={styles.resumeNoteText}>
+            Resume uploads are not yet available on mobile. To add a resume, use the web app or link to it via email/Discord.
+          </Text>
+        </View>
+
         <Pressable style={styles.save} onPress={onSave} disabled={loading}>
           {loading ? (
             <ActivityIndicator color="#fafafa" />
@@ -259,7 +316,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0c0c0f" },
-  scroll: { padding: 20, paddingBottom: 40, maxWidth: 480, width: "100%", alignSelf: "center" },
+  scroll: { padding: 20, paddingBottom: 56, maxWidth: 480, width: "100%", alignSelf: "center" },
   headerActions: { position: "absolute", right: 20, top: 20, zIndex: 40 },
   headerIcon: { padding: 8, backgroundColor: "transparent", borderRadius: 8 },
   title: { color: "#f4f4f5", fontSize: 22, fontWeight: "700" },
@@ -342,4 +399,13 @@ const styles = StyleSheet.create({
   },
   signOutText: { color: "#fca5a5", fontWeight: "700", fontSize: 15 },
   saved: { marginTop: 12, textAlign: "center", color: "#71717a", fontSize: 12 },
+  resumeNote: {
+    marginTop: 8,
+    backgroundColor: "rgba(124,58,237,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(124,58,237,0.2)",
+    borderRadius: 12,
+    padding: 12,
+  },
+  resumeNoteText: { color: "#b4a4e8", fontSize: 13, lineHeight: 18 },
 });

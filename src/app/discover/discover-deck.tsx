@@ -140,10 +140,10 @@ export function DiscoverDeck({ initialProfiles }: Props) {
         <p className="text-lg font-medium text-[var(--foreground)]">
           You&apos;re caught up
         </p>
-        <p className="max-w-sm text-sm text-[var(--muted)]">
+        {/* <p className="max-w-sm text-sm text-[var(--muted)]">
           Wire this view to Supabase to load real participants for your
           hackathon.
-        </p>
+        </p> */}
       </div>
     );
   }

@@ -15,6 +15,10 @@ type Profile = {
   headline?: string;
   tech_stack?: string[];
   interests?: string;
+  discord?: string;
+  email?: string;
+  linkedin?: string;
+  projects?: string;
 };
 
 type ProfileFormProps = {
@@ -28,6 +32,10 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
     initialProfile?.tech_stack?.join(", ") || "React, TypeScript, Figma"
   );
   const [interests, setInterests] = useState(initialProfile?.interests || "");
+  const [discord, setDiscord] = useState(initialProfile?.discord || "");
+  const [email, setEmail] = useState(initialProfile?.email || "");
+  const [linkedin, setLinkedin] = useState(initialProfile?.linkedin || "");
+  const [projects, setProjects] = useState(initialProfile?.projects || "");
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -45,6 +53,10 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
         headline,
         tech_stack: parseStack(techRaw),
         interests,
+        discord,
+        email,
+        linkedin,
+        projects,
         updated_at: new Date().toISOString(),
       });
     }
@@ -135,6 +147,72 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
           onChange={(e) => setInterests(e.target.value)}
           rows={4}
           placeholder="Themes, domains, or weekend goals…"
+          className="mt-1.5 w-full resize-y rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-[var(--accent)] focus:ring-2"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="discord"
+          className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]"
+        >
+          Discord username
+        </label>
+        <input
+          id="discord"
+          value={discord}
+          onChange={(e) => setDiscord(e.target.value)}
+          placeholder="yourname#1234 or yourname (optional)"
+          className="mt-1.5 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-[var(--accent)] focus:ring-2"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="email"
+          className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]"
+        >
+          Email
+        </label>
+        <input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="your@email.com (optional)"
+          className="mt-1.5 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-[var(--accent)] focus:ring-2"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="linkedin"
+          className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]"
+        >
+          LinkedIn
+        </label>
+        <input
+          id="linkedin"
+          value={linkedin}
+          onChange={(e) => setLinkedin(e.target.value)}
+          placeholder="linkedin.com/in/yourprofile (optional)"
+          className="mt-1.5 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-[var(--accent)] focus:ring-2"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="projects"
+          className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]"
+        >
+          Previous projects & experience
+        </label>
+        <textarea
+          id="projects"
+          value={projects}
+          onChange={(e) => setProjects(e.target.value)}
+          rows={4}
+          placeholder="Projects, internships, hackathons, or anything else not on your resume…"
           className="mt-1.5 w-full resize-y rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-[var(--accent)] focus:ring-2"
         />
       </div>
