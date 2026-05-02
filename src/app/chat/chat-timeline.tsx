@@ -15,13 +15,24 @@ type Props = {
   roomId: string;
   currentUserId: string;
   initialMessages: MessageRow[];
+  onReady?: (appendMessage: (message: MessageRow) => void) => void;
 };
 
-export function ChatTimeline({ roomId, currentUserId, initialMessages }: Props) {
+export function ChatTimeline({ roomId, currentUserId, initialMessages, onReady }: Props) {
   const [messages, setMessages] = useState<MessageRow[]>(initialMessages);
   const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    onReady?.((message) => {
+      setMessages((current) =>
+        current.some((existingMessage) => existingMessage.id === message.id)
+          ? current
+          : [...current, message],
+      );
+    });
+  }, [onReady]);
 
   useEffect(() => {
     setMessages(initialMessages);
@@ -97,8 +108,8 @@ export function ChatTimeline({ roomId, currentUserId, initialMessages }: Props) 
           >
             <div
               className={`max-w-[80%] rounded-3xl px-4 py-3 text-sm leading-6 ${isMine
-                  ? "bg-[var(--accent)] text-[var(--accent-fg)]"
-                  : "bg-[var(--muted-bg)] text-[var(--foreground)]"
+                ? "bg-[var(--accent)] text-[var(--accent-fg)]"
+                : "bg-[var(--muted-bg)] text-[var(--foreground)]"
                 }`}
             >
               {message.body}
