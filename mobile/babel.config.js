@@ -11,6 +11,7 @@ module.exports = function (api) {
   api.cache(true);
   return {
     presets: ["babel-preset-expo"],
-    plugins: [expoRouterBabelPlugin],
+    // Keep expo-router plugin first, add Reanimated plugin last as required.
+    plugins: [expoRouterBabelPlugin, 'react-native-reanimated/plugin'],
   };
 };
