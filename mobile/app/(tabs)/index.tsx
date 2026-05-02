@@ -1,4 +1,4 @@
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 
 export default function HomeScreen() {
   const [hasUser, setHasUser] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     let mounted = true;
@@ -56,17 +57,23 @@ export default function HomeScreen() {
         web app in the monorepo.
       </Text>
       <View style={styles.row}>
-        <Link href="/(tabs)/discover" asChild>
-          <Pressable style={styles.primary}>
-            <Text style={styles.primaryText}>Open discover</Text>
-          </Pressable>
-        </Link>
-        <Link href="/(tabs)/profile" asChild>
-          <Pressable style={styles.secondary}>
-            <Text style={styles.secondaryText}>Edit profile</Text>
-          </Pressable>
-        </Link>
+        <Pressable style={styles.primary} onPress={() => router.push("/discover")}>
+          <Text style={styles.primaryText}>Open discover</Text>
+        </Pressable>
+        <Pressable style={styles.secondary} onPress={() => router.push("/profile")}>
+          <Text style={styles.secondaryText}>Edit profile</Text>
+        </Pressable>
       </View>
+      {hasUser ? (
+        <View style={[styles.row, { marginTop: 14 }]}> 
+          <Pressable style={styles.secondary} onPress={() => router.push("/passed")}>
+            <Text style={styles.secondaryText}>Passed</Text>
+          </Pressable>
+          <Pressable style={styles.secondary} onPress={() => router.push("/accepted")}>
+            <Text style={styles.secondaryText}>Accepted</Text>
+          </Pressable>
+        </View>
+      ) : null}
       {!hasUser ? (
         <Link href={"/auth" as any} asChild>
           <Pressable style={styles.authButton}>

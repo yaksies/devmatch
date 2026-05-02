@@ -1,22 +1,217 @@
-export default function ChatPage() {
+import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import { ChatTimeline } from "./chat-timeline";
+import { sendMessage } from "./actions";
+import { createClient } from "@/lib/supabase/server";
+
+type MatchRow = {
+  id: string;
+  user_a: string;
+  user_b: string;
+  created_at: string;
+};
+
+type RoomRow = {
+  id: string;
+  match_id: string;
+};
+
+type ProfileRow = {
+  id: string;
+  display_name: string;
+  headline: string | null;
+};
+
+type MessageRow = {
+  id: string;
+  room_id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+};
+
+function getPartnerId(match: MatchRow, userId: string) {
+  return match.user_a === userId ? match.user_b : match.user_a;
+}
+
+export default async function ChatPage({
+  searchParams,
+}: {
+  searchParams: { with?: string };
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: matchesData } = await supabase
+    .from("matches")
+    .select("id, user_a, user_b, created_at")
+    .or(`user_a.eq.${user.id},user_b.eq.${user.id}`)
+    .order("created_at", { ascending: false });
+
+  const matches = (matchesData ?? []) as MatchRow[];
+  const partnerIds = [...new Set(matches.map((match) => getPartnerId(match, user.id)))];
+
+  const { data: profileData } = partnerIds.length
+    ? await supabase
+        .from("profiles")
+        .select("id, display_name, headline")
+        .in("id", partnerIds)
+    : { data: [] as ProfileRow[] };
+
+  const { data: roomData } = matches.length
+    ? await supabase
+        .from("chat_rooms")
+        .select("id, match_id")
+        .in("match_id", matches.map((match) => match.id))
+    : { data: [] as RoomRow[] };
+
+  const profileMap = new Map((profileData ?? []).map((profile) => [profile.id, profile]));
+  const roomMap = new Map((roomData ?? []).map((room) => [room.match_id, room]));
+
+  const selectedPartnerId = searchParams.with && profileMap.has(searchParams.with)
+    ? searchParams.with
+    : partnerIds[0];
+
+  const selectedMatch = selectedPartnerId
+    ? matches.find((match) => getPartnerId(match, user.id) === selectedPartnerId)
+    : undefined;
+  const selectedRoom = selectedMatch ? roomMap.get(selectedMatch.id) : undefined;
+  const selectedProfile = selectedPartnerId ? profileMap.get(selectedPartnerId) : undefined;
+
+  const { data: messageData } = selectedRoom
+    ? await supabase
+        .from("chat_messages")
+        .select("id, room_id, sender_id, body, created_at")
+        .eq("room_id", selectedRoom.id)
+        .order("created_at", { ascending: true })
+    : { data: [] as MessageRow[] };
+
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6">
-      <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
-        Messages
-      </h1>
-      <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
-        After two people like each other, open a room backed by Supabase
-        Realtime on <code className="rounded bg-[var(--muted-bg)] px-1">chat_messages</code>
-        . Enable replication for that table in the Supabase dashboard, then
-        subscribe with{" "}
-        <code className="rounded bg-[var(--muted-bg)] px-1">
-          supabase.channel(...)
-        </code>{" "}
-        from the browser client.
-      </p>
-      <div className="mt-8 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface)] px-6 py-12 text-center text-sm text-[var(--muted)]">
-        No active chats yet — matching UI comes next.
-      </div>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 lg:flex-row">
+      <aside className="w-full rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xl shadow-black/10 lg:max-w-sm">
+        <div className="mb-4 px-2 pt-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+            Chat
+          </h1>
+          <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">
+            Conversations only appear after both people like each other.
+          </p>
+        </div>
+
+        {partnerIds.length ? (
+          <div className="space-y-2">
+            {partnerIds.map((partnerId) => {
+              const profile = profileMap.get(partnerId);
+              const isSelected = partnerId === selectedPartnerId;
+
+              return (
+                <Link
+                  key={partnerId}
+                  href={`/chat?with=${partnerId}`}
+                  className={`block rounded-2xl border px-4 py-3 transition-colors ${
+                    isSelected
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                      : "border-[var(--border)] bg-[var(--surface-2)] hover:bg-[var(--muted-bg)]"
+                  }`}
+                >
+                  <p className="font-medium text-[var(--foreground)]">
+                    {profile?.display_name ?? "Unknown"}
+                  </p>
+                  <p className="mt-1 text-sm text-[var(--muted)]">
+                    {profile?.headline ?? "Matched on DevMatch"}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-dashed border-[var(--border)] bg-[var(--surface-2)] px-6 py-12 text-center">
+            <p className="text-base font-medium text-[var(--foreground)]">
+              No matches yet
+            </p>
+            <p className="mt-2 text-sm text-[var(--muted)]">
+              Once you and another participant accept each other, the chat room
+              will appear here.
+            </p>
+            <Link
+              href="/discover"
+              className="mt-5 inline-flex rounded-full bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-fg)] transition-opacity hover:opacity-90"
+            >
+              Keep swiping
+            </Link>
+          </div>
+        )}
+      </aside>
+
+      <section className="flex min-h-[640px] flex-1 flex-col rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-2xl shadow-black/10 sm:p-6">
+        {selectedPartnerId && selectedProfile && selectedRoom ? (
+          <>
+            <div className="border-b border-[var(--border)] pb-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+                Active room
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+                {selectedProfile.display_name}
+              </h2>
+              {selectedProfile.headline ? (
+                <p className="mt-1 text-sm text-[var(--muted)]">
+                  {selectedProfile.headline}
+                </p>
+              ) : null}
+            </div>
+
+            <ChatTimeline
+              roomId={selectedRoom.id}
+              currentUserId={user.id}
+              initialMessages={messageData ?? []}
+            />
+
+            <form
+              action={sendMessage.bind(null, selectedRoom.id, selectedPartnerId)}
+              className="border-t border-[var(--border)] pt-4"
+            >
+              <label className="sr-only" htmlFor="message">
+                Message
+              </label>
+              <div className="flex gap-3">
+                <textarea
+                  id="message"
+                  name="message"
+                  rows={2}
+                  placeholder="Write a message..."
+                  className="min-h-[52px] flex-1 resize-none rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3 text-sm text-[var(--foreground)] outline-none transition-colors placeholder:text-[var(--muted)] focus:border-[var(--accent)]"
+                />
+                <button className="inline-flex items-center justify-center rounded-2xl bg-[var(--accent)] px-5 text-sm font-medium text-[var(--accent-fg)] transition-opacity hover:opacity-90">
+                  Send
+                </button>
+              </div>
+            </form>
+          </>
+        ) : (
+          <div className="flex flex-1 items-center justify-center rounded-[1.75rem] border border-dashed border-[var(--border)] bg-[var(--surface-2)] px-8 py-16 text-center">
+            <div className="max-w-md">
+              <h2 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+                Your matches will show up here
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+                Open Discover, like someone who also likes you back, and this
+                panel will turn into a live conversation.
+              </p>
+              <Link
+                href="/discover"
+                className="mt-6 inline-flex rounded-full bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[var(--accent-fg)] transition-opacity hover:opacity-90"
+              >
+                Discover people
+              </Link>
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

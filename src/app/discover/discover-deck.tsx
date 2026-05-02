@@ -32,25 +32,14 @@ export function DiscoverDeck({ initialProfiles }: Props) {
     };
   }, []);
 
-  const commitSwipe = async (direction: "like" | "pass") => {
+  const commitSwipe = (direction: "like" | "pass") => {
     if (!current || swipeDir) return;
+
+    const targetId = current.id;
 
     swipeCooldownUntil.current = Date.now() + 320;
     setSwipeDir(direction === "like" ? 1 : -1);
     setIsPromotingNext(true);
-
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (user) {
-      await supabase.from("swipes").insert({
-        swiper_id: user.id,
-        target_id: current.id,
-        direction,
-      });
-    }
 
     window.setTimeout(() => {
       setReviewed((n) => n + 1);
@@ -60,6 +49,25 @@ export function DiscoverDeck({ initialProfiles }: Props) {
       setSwipeDir(null);
       setIsPromotingNext(false);
     }, 220);
+
+    void (async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      const { error } = await supabase.from("swipes").insert({
+        swiper_id: user.id,
+        target_id: targetId,
+        direction,
+      });
+
+      if (error) {
+        console.error("Failed to save swipe", error);
+      }
+    })();
   };
 
   const finishDrag = () => {

@@ -9,7 +9,8 @@ import {
   View,
 } from "react-native";
 
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 
 import { supabase } from "@/lib/supabase";
 
@@ -29,6 +30,8 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [hasUser, setHasUser] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const router = useRouter();
 
   const tags = parseStack(techRaw);
 
@@ -52,6 +55,16 @@ export default function ProfileScreen() {
 
       if (mounted) {
         setHasUser(true);
+      }
+
+      const { count } = await supabase
+        .from("swipes")
+        .select("id", { count: "exact", head: true })
+        .eq("target_id", user.id)
+        .eq("direction", "like");
+
+      if (mounted) {
+        setNotificationCount(count ?? 0);
       }
 
       const { data: profile } = await supabase
@@ -150,6 +163,15 @@ export default function ProfileScreen() {
       contentContainerStyle={styles.scroll}
       style={styles.root}
     >
+      <View style={styles.headerActions}>
+        <Pressable style={styles.headerIcon} onPress={() => router.push("/notifications")}>
+          <FontAwesome
+            name={notificationCount > 0 ? "heart" : "heart-o"}
+            size={18}
+            color={notificationCount > 0 ? "#ff6b6b" : "rgba(255,255,255,0.92)"}
+          />
+        </Pressable>
+      </View>
       <Text style={styles.title}>Your hackathon profile</Text>
       <Text style={styles.sub}>
         This is what others see while swiping. Keep it short and specific.
@@ -238,6 +260,8 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0c0c0f" },
   scroll: { padding: 20, paddingBottom: 40, maxWidth: 480, width: "100%", alignSelf: "center" },
+  headerActions: { position: "absolute", right: 20, top: 20, zIndex: 40 },
+  headerIcon: { padding: 8, backgroundColor: "transparent", borderRadius: 8 },
   title: { color: "#f4f4f5", fontSize: 22, fontWeight: "700" },
   sub: { marginTop: 8, color: "#a1a1aa", fontSize: 14, lineHeight: 20, marginBottom: 20 },
   notice: {

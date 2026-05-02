@@ -54,6 +54,11 @@ create policy "Users can read their own swipes"
   to authenticated
   using (auth.uid() = swiper_id);
 
+create policy "Users can read swipes involving them"
+  on public.swipes for select
+  to authenticated
+  using (auth.uid() = swiper_id or auth.uid() = target_id);
+
 create policy "Users can insert their own swipes"
   on public.swipes for insert
   to authenticated

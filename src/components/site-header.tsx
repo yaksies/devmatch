@@ -4,6 +4,8 @@ import { logout } from "@/app/login/actions";
 
 const nav = [
   { href: "/discover", label: "Discover" },
+  { href: "/passed", label: "Passed" },
+  { href: "/accepted", label: "Accepted" },
   { href: "/profile", label: "My profile" },
   { href: "/chat", label: "Chat" },
 ] as const;
@@ -11,6 +13,13 @@ const nav = [
 export async function SiteHeader() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const { count: notificationCount } = user
+    ? await supabase
+        .from("swipes")
+        .select("id", { count: "exact", head: true })
+        .eq("target_id", user.id)
+        .eq("direction", "like")
+    : { count: 0 };
 
   return (
     <header className="border-b border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-md">
@@ -33,6 +42,16 @@ export async function SiteHeader() {
                   {item.label}
                 </Link>
               ))}
+
+              <Link
+                href="/notifications"
+                aria-label="Notifications"
+                className="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--border)] text-sm transition-colors hover:bg-[var(--muted-bg)]"
+              >
+                <span className={notificationCount ? "text-red-400" : "text-[var(--foreground)]/80"}>
+                  {notificationCount ? "♥" : "♡"}
+                </span>
+              </Link>
 
               <div className="ml-2 flex items-center border-l border-[var(--border)] pl-2">
                 <form action={logout}>

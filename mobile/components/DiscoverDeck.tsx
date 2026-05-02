@@ -31,6 +31,23 @@ export function DiscoverDeck({ initialProfiles }: Props) {
     setSwipeDir(direction);
     setIsPromotingNext(true);
 
+    const directionStr = direction === 1 ? "like" : "pass";
+
+        // Save to Supabase
+        (async () => {
+          const { supabase } = await import("@/lib/supabase");
+          if (supabase) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.from("swipes").insert({
+                swiper_id: user.id,
+                target_id: current.id,
+                direction: directionStr,
+              });
+            }
+          }
+        })();
+
     setTimeout(() => {
       setReviewed((n) => n + 1);
       setIndex((i) => i + 1);
@@ -57,7 +74,7 @@ export function DiscoverDeck({ initialProfiles }: Props) {
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: (_evt, gestureState) =>
-          Math.abs(gestureState.dx) > 4 || Math.abs(gestureState.dy) > 4,
+          Math.abs(gestureState.dx) > 2 || Math.abs(gestureState.dy) > 2,
         onPanResponderGrant: (event) => {
           startX.current = event.nativeEvent.pageX;
           setIsDragging(true);
