@@ -29,6 +29,7 @@ export default function ProfileScreen() {
   const [discord, setDiscord] = useState("");
   const [email, setEmail] = useState("");
   const [linkedin, setLinkedin] = useState("");
+  const [github, setGithub] = useState("");
   const [projects, setProjects] = useState("");
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -73,7 +74,7 @@ export default function ProfileScreen() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name, headline, tech_stack, interests, discord, email, linkedin, projects")
+        .select("display_name, headline, tech_stack, interests, discord, email, linkedin, github, projects")
         .eq("id", user.id)
         .single();
 
@@ -85,6 +86,7 @@ export default function ProfileScreen() {
         setDiscord(profile.discord ?? "");
         setEmail(profile.email ?? "");
         setLinkedin(profile.linkedin ?? "");
+        setGithub(profile.github ?? "");
         setProjects(profile.projects ?? "");
       }
     }
@@ -153,6 +155,7 @@ export default function ProfileScreen() {
       discord,
       email,
       linkedin,
+      github,
       projects,
       updated_at: new Date().toISOString(),
     });
@@ -160,7 +163,8 @@ export default function ProfileScreen() {
     setLoading(false);
 
     if (error) {
-      setMessage(error.message);
+      console.error("Error saving profile:", error);
+      setMessage("Failed to save profile: " + error.message);
       return;
     }
 
@@ -275,6 +279,15 @@ export default function ProfileScreen() {
           value={linkedin}
           onChangeText={setLinkedin}
           placeholder="linkedin.com/in/yourprofile (optional)"
+          placeholderTextColor="#71717a"
+          style={styles.input}
+        />
+
+        <Text style={styles.label}>GitHub</Text>
+        <TextInput
+          value={github}
+          onChangeText={setGithub}
+          placeholder="github.com/yourprofile (optional)"
           placeholderTextColor="#71717a"
           style={styles.input}
         />

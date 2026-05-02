@@ -3,6 +3,12 @@ import { redirect } from "next/navigation";
 
 import { acceptBack, undoSwipe } from "../../notifications/actions";
 import { createClient } from "@/lib/supabase/server";
+import { ProfileAiInsightButton } from "@/components/ProfileAiInsightButton";
+import { mockDiscoverDeck } from "@devmatch/shared";
+
+function getMockProfile(id: string) {
+  return mockDiscoverDeck.find((profile) => profile.id === id);
+}
 
 async function handleAcceptBack(targetId: string) {
   "use server";
@@ -31,13 +37,19 @@ export default async function UserProfilePage({
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from("profiles")
-    .select("id, display_name, headline, tech_stack, interests")
+    .select("id, display_name, headline, tech_stack, interests, discord, email, linkedin, github, projects")
     .eq("id", resolvedParams.id)
     .single();
 
-  if (!profile) {
+  if (error && error.code !== "PGRST116") {
+    console.error("Error fetching profile:", error.message, error.details, error.hint);
+  }
+
+  const mockProfile = profile ? null : getMockProfile(resolvedParams.id);
+
+  if (!profile && !mockProfile) {
     const backHref = resolvedSearchParams.from === "passed" ? "/passed" : resolvedSearchParams.from === "accepted" ? "/accepted" : "/notifications";
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-col px-4 py-10 sm:px-6">
@@ -52,8 +64,15 @@ export default async function UserProfilePage({
   }
 
   const backHref = resolvedSearchParams.from === "passed" ? "/passed" : resolvedSearchParams.from === "accepted" ? "/accepted" : "/notifications";
-  const canAcceptBack = resolvedSearchParams.from === "notifications" && profile.id !== user.id;
-  const canUndo = (resolvedSearchParams.from === "passed" || resolvedSearchParams.from === "accepted") && profile.id !== user.id;
+  const resolvedProfile = profile ?? {
+    id: mockProfile!.id,
+    display_name: mockProfile!.displayName,
+    headline: mockProfile!.headline,
+    tech_stack: mockProfile!.techStack,
+    interests: mockProfile!.interests,
+  };
+  const canAcceptBack = Boolean(profile) && resolvedSearchParams.from === "notifications" && resolvedProfile.id !== user.id;
+  const canUndo = Boolean(profile) && (resolvedSearchParams.from === "passed" || resolvedSearchParams.from === "accepted") && resolvedProfile.id !== user.id;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col px-4 py-10 sm:px-6">
@@ -67,17 +86,17 @@ export default async function UserProfilePage({
 
       <div className="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl shadow-black/10 sm:p-8">
         <p className="text-sm font-medium uppercase tracking-wider text-[var(--accent)]">
-          Hackathon profile
+          {profile ? "Hackathon profile" : "Test profile"}
         </p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight text-[var(--foreground)]">
-          {profile.display_name}
+          {resolvedProfile.display_name}
         </h1>
-        {profile.headline ? (
-          <p className="mt-3 text-base leading-7 text-[var(--muted)]">{profile.headline}</p>
+        {resolvedProfile.headline ? (
+          <p className="mt-3 text-base leading-7 text-[var(--muted)]">{resolvedProfile.headline}</p>
         ) : null}
 
         <div className="mt-6 flex flex-wrap gap-2">
-          {(profile.tech_stack ?? []).map((tag: string) => (
+          {(resolvedProfile.tech_stack ?? []).map((tag: string) => (
             <span
               key={tag}
               className="rounded-full bg-[var(--muted-bg)] px-3 py-1 text-xs font-medium text-[var(--foreground)]"
@@ -87,11 +106,49 @@ export default async function UserProfilePage({
           ))}
         </div>
 
-        {profile.interests ? (
+        {resolvedProfile.interests ? (
           <p className="mt-6 text-sm leading-7 text-[var(--foreground)]">
-            {profile.interests}
+            {resolvedProfile.interests}
           </p>
         ) : null}
+
+        {profile?.projects ? (
+          <div className="mt-8">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">Projects & Experience</h2>
+            <p className="mt-2 text-sm leading-7 text-[var(--foreground)]">{profile.projects}</p>
+          </div>
+        ) : null}
+
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {profile?.discord ? (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">Discord</p>
+              <p className="mt-1 text-sm text-[var(--foreground)]">{profile.discord}</p>
+            </div>
+          ) : null}
+          {profile?.email ? (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">Email</p>
+              <p className="mt-1 text-sm text-[var(--foreground)]">{profile.email}</p>
+            </div>
+          ) : null}
+          {profile?.github ? (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">GitHub</p>
+              <p className="mt-1 text-sm text-[var(--foreground)]">{profile.github}</p>
+            </div>
+          ) : null}
+          {profile?.linkedin ? (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">LinkedIn</p>
+              <p className="mt-1 text-sm text-[var(--foreground)]">{profile.linkedin}</p>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="mt-8 flex flex-wrap gap-3">
+          <ProfileAiInsightButton profileId={resolvedProfile.id} profileName={resolvedProfile.display_name} />
+        </div>
 
         <div className="mt-8 flex gap-3">
           {canAcceptBack ? (

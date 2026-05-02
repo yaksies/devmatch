@@ -1,8 +1,28 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { supabase } from "@/lib/supabase";
+import { mockDiscoverDeck } from "@devmatch/shared";
+
+type Insight = {
+  summary: string;
+  confidence: "low" | "medium" | "high";
+  strengths: string[];
+  signals: string[];
+  caveats: string[];
+  sources: string[];
+  generatedAt: string;
+};
+
+function getWebBaseUrl() {
+  const env = process.env.EXPO_PUBLIC_WEB_BASE_URL?.trim();
+  if (env) {
+    return env.replace(/\/$/, "");
+  }
+
+  return Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://localhost:3000";
+}
 
 export default function UserProfile() {
   const router = useRouter();
@@ -12,6 +32,13 @@ export default function UserProfile() {
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiCached, setAiCached] = useState(false);
+  const [aiInsight, setAiInsight] = useState<Insight | null>(null);
+
+  const mockProfile = mockDiscoverDeck.find((item) => item.id === id);
 
   useEffect(() => {
     let mounted = true;
@@ -46,12 +73,24 @@ export default function UserProfile() {
 
       const { data } = await supabase
         .from("profiles")
-        .select("id,display_name,headline,tech_stack,interests,avatar_url")
+        .select("id,display_name,headline,tech_stack,interests,avatar_url,discord,email,linkedin,github,projects")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (!mounted) return;
-      setProfile(data ?? null);
+      setProfile(
+        data ??
+          (mockProfile
+            ? {
+                id: mockProfile.id,
+                display_name: mockProfile.displayName,
+                headline: mockProfile.headline,
+                tech_stack: mockProfile.techStack,
+                interests: mockProfile.interests,
+                avatar_url: null,
+              }
+            : null),
+      );
       setLoading(false);
     }
 
@@ -84,6 +123,37 @@ export default function UserProfile() {
     router.back();
   }
 
+  async function openAiInsight() {
+    if (!id) return;
+
+    setAiOpen(true);
+    setAiLoading(true);
+    setAiError(null);
+
+    try {
+      const response = await fetch(`${getWebBaseUrl()}/api/profile-analysis/${id}`, {
+        cache: "no-store",
+      });
+
+      const data = (await response.json()) as {
+        cached?: boolean;
+        insight?: Insight;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to analyze profile");
+      }
+
+      setAiCached(Boolean(data.cached));
+      setAiInsight(data.insight ?? null);
+    } catch (requestError) {
+      setAiError(requestError instanceof Error ? requestError.message : "Failed to analyze profile");
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   if (loading) {
     return (
       <View style={[styles.root, { justifyContent: "center", alignItems: "center" }]}>
@@ -110,6 +180,7 @@ export default function UserProfile() {
 
   const canAcceptBack = from === "notifications" && profile.id !== currentUserId;
   const canUndo = (from === "passed" || from === "accepted") && profile.id !== currentUserId;
+  const isMockProfile = mockDiscoverDeck.some((item) => item.id === profile.id);
 
   return (
     <ScrollView contentContainerStyle={styles.scroll} style={styles.root}>
@@ -135,17 +206,42 @@ export default function UserProfile() {
           <Text style={styles.interests}>{profile.interests}</Text>
         ) : null}
 
+        {profile.projects ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Projects & Experience</Text>
+            <Text style={styles.interests}>{profile.projects}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.socialRow}>
+          {profile.github ? (
+            <View style={styles.socialItem}>
+              <Text style={styles.socialLabel}>GitHub</Text>
+              <Text style={styles.socialValue}>{profile.github}</Text>
+            </View>
+          ) : null}
+          {profile.linkedin ? (
+            <View style={styles.socialItem}>
+              <Text style={styles.socialLabel}>LinkedIn</Text>
+              <Text style={styles.socialValue}>{profile.linkedin}</Text>
+            </View>
+          ) : null}
+        </View>
+
         <View style={styles.buttonRow}>
           {canAcceptBack && currentUserId ? (
             <Pressable style={styles.accept} onPress={acceptBack}>
               <Text style={styles.acceptText}>Accept back</Text>
             </Pressable>
           ) : null}
-          {canUndo && currentUserId ? (
+          {canUndo && currentUserId && !isMockProfile ? (
             <Pressable style={styles.undo} onPress={undoSwipe}>
               <Text style={styles.undoText}>Retake swipe</Text>
             </Pressable>
           ) : null}
+          <Pressable style={styles.aiButton} onPress={() => void openAiInsight()}>
+            <Text style={styles.aiButtonText}>Confirm with AI</Text>
+          </Pressable>
         </View>
       </View>
       
@@ -154,6 +250,76 @@ export default function UserProfile() {
           <ActivityIndicator size="small" color="#7c3aed" />
         </View>
       )}
+
+      <Modal visible={aiOpen} transparent animationType="fade" onRequestClose={() => setAiOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalKicker}>AI profile check</Text>
+                <Text style={styles.modalTitle}>{profile.display_name}</Text>
+              </View>
+              <Pressable onPress={() => setAiOpen(false)} style={styles.modalClose}>
+                <Text style={styles.modalCloseText}>Close</Text>
+              </Pressable>
+            </View>
+
+            <Text style={styles.modalSub}>
+              This summary uses the profile details they've shared plus any public GitHub info.
+            </Text>
+
+            {aiLoading ? (
+              <View style={styles.modalLoading}>
+                <ActivityIndicator size="small" color="#7c3aed" />
+                <Text style={styles.modalLoadingText}>Analyzing profile...</Text>
+              </View>
+            ) : aiError ? (
+              <Text style={styles.modalError}>{aiError}</Text>
+            ) : aiInsight ? (
+              <ScrollView style={styles.modalBody} contentContainerStyle={{ gap: 16 }}>
+                <View style={styles.summaryBox}>
+                  <View style={styles.summaryHeader}>
+                    <Text style={styles.sectionLabel}>Summary</Text>
+                    <Text style={styles.confidencePill}>Confidence: {aiInsight.confidence}</Text>
+                  </View>
+                  <Text style={styles.summaryText}>{aiInsight.summary}</Text>
+                </View>
+
+                <View style={styles.modalGrid}>
+                  <View style={styles.listColumn}>
+                    <Text style={styles.sectionLabel}>Strengths</Text>
+                    {aiInsight.strengths.map((item) => (
+                      <Text key={item} style={styles.listItem}>• {item}</Text>
+                    ))}
+                  </View>
+                  <View style={styles.listColumn}>
+                    <Text style={styles.sectionLabel}>Signals</Text>
+                    {aiInsight.signals.map((item) => (
+                      <Text key={item} style={styles.listItem}>• {item}</Text>
+                    ))}
+                  </View>
+                </View>
+
+                {aiInsight.caveats.length > 0 ? (
+                  <View style={styles.listColumn}>
+                    <Text style={styles.sectionLabel}>Caveats</Text>
+                    {aiInsight.caveats.map((item) => (
+                      <Text key={item} style={[styles.listItem, styles.caveatItem]}>• {item}</Text>
+                    ))}
+                  </View>
+                ) : null}
+
+                <View style={styles.sourceRow}>
+                  <Text style={styles.sourceTag}>{aiCached ? "Cached result" : "Fresh analysis"}</Text>
+                  {aiInsight.sources.map((source) => (
+                    <Text key={source} style={styles.sourceTag}>{source}</Text>
+                  ))}
+                </View>
+              </ScrollView>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -179,8 +345,23 @@ const styles = StyleSheet.create({
   },
   tagText: { color: "#f4f4f5", fontSize: 13 },
   interests: { marginTop: 12, color: "#e4e4e7", fontSize: 14, lineHeight: 20 },
-  buttonRow: { marginTop: 18, gap: 10 },
+  section: { marginTop: 20 },
+  socialRow: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 20 },
+  socialItem: { flex: 1, minWidth: 140 },
+  socialLabel: { color: "#a1a1aa", fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+  socialValue: { color: "#f4f4f5", fontSize: 13, marginTop: 4 },
+  buttonRow: { marginTop: 24, gap: 10 },
   loadingButtons: { marginTop: 18, alignItems: "center" },
+  aiButton: {
+    backgroundColor: "rgba(124,58,237,0.16)",
+    borderWidth: 1,
+    borderColor: "rgba(124,58,237,0.4)",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  aiButtonText: { color: "#e9d5ff", fontWeight: "700", fontSize: 15 },
   accept: {
     backgroundColor: "#10b981",
     paddingVertical: 12,
@@ -199,6 +380,63 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.12)",
   },
   undoText: { color: "#f4f4f5", fontWeight: "700", fontSize: 15 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalCard: {
+    maxHeight: "86%",
+    backgroundColor: "#141418",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    padding: 18,
+  },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  modalKicker: { color: "#7c3aed", fontSize: 11, fontWeight: "700", letterSpacing: 1.3, textTransform: "uppercase" },
+  modalTitle: { marginTop: 6, color: "#f4f4f5", fontSize: 22, fontWeight: "700" },
+  modalClose: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  modalCloseText: { color: "#f4f4f5", fontSize: 13, fontWeight: "600" },
+  modalSub: { marginTop: 12, color: "#a1a1aa", fontSize: 13, lineHeight: 19 },
+  modalLoading: { marginTop: 18, flexDirection: "row", alignItems: "center", gap: 10 },
+  modalLoadingText: { color: "#a1a1aa", fontSize: 13 },
+  modalError: { marginTop: 18, color: "#fca5a5", fontSize: 14 },
+  modalBody: { marginTop: 18 },
+  summaryBox: {
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  summaryHeader: { flexDirection: "row", justifyContent: "space-between", gap: 10, alignItems: "center" },
+  sectionLabel: { color: "#a1a1aa", fontSize: 11, fontWeight: "700", letterSpacing: 1.2, textTransform: "uppercase" },
+  confidencePill: { color: "#e9d5ff", fontSize: 11, fontWeight: "700" },
+  summaryText: { marginTop: 10, color: "#f4f4f5", fontSize: 14, lineHeight: 21 },
+  modalGrid: { flexDirection: "row", gap: 12 },
+  listColumn: { flex: 1, gap: 8 },
+  listItem: { color: "#e4e4e7", fontSize: 13, lineHeight: 19 },
+  caveatItem: { color: "#d4d4d8" },
+  sourceRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  sourceTag: {
+    color: "#a1a1aa",
+    fontSize: 11,
+    fontWeight: "600",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
   notFound: { paddingTop: 40, alignItems: "center" },
   notFoundText: { color: "#f4f4f5", fontSize: 16, fontWeight: "600" },
   notFoundSub: { color: "#a1a1aa", marginTop: 8, fontSize: 14 },

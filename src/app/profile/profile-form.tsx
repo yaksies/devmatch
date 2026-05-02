@@ -18,6 +18,7 @@ type Profile = {
   discord?: string;
   email?: string;
   linkedin?: string;
+  github?: string;
   projects?: string;
 };
 
@@ -35,6 +36,7 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
   const [discord, setDiscord] = useState(initialProfile?.discord || "");
   const [email, setEmail] = useState(initialProfile?.email || "");
   const [linkedin, setLinkedin] = useState(initialProfile?.linkedin || "");
+  const [github, setGithub] = useState(initialProfile?.github || "");
   const [projects, setProjects] = useState(initialProfile?.projects || "");
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -47,7 +49,7 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
-      await supabase.from("profiles").upsert({
+      const { error } = await supabase.from("profiles").upsert({
         id: user.id,
         display_name: displayName,
         headline,
@@ -56,14 +58,21 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
         discord,
         email,
         linkedin,
+        github,
         projects,
         updated_at: new Date().toISOString(),
       });
+
+      if (error) {
+        console.error("Error saving profile:", error);
+        alert("Failed to save profile: " + error.message);
+      } else {
+        setSaved(true);
+        window.setTimeout(() => setSaved(false), 2500);
+      }
     }
 
     setLoading(false);
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2500);
   }
 
   const previewTags = parseStack(techRaw);
@@ -196,6 +205,22 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
           value={linkedin}
           onChange={(e) => setLinkedin(e.target.value)}
           placeholder="linkedin.com/in/yourprofile (optional)"
+          className="mt-1.5 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-[var(--accent)] focus:ring-2"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="github"
+          className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]"
+        >
+          GitHub
+        </label>
+        <input
+          id="github"
+          value={github}
+          onChange={(e) => setGithub(e.target.value)}
+          placeholder="github.com/yourprofile (optional)"
           className="mt-1.5 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] outline-none ring-[var(--accent)] focus:ring-2"
         />
       </div>
