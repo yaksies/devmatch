@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 import { ChatTimeline } from "./chat-timeline";
 import { sendMessage } from "./actions";
 import { createClient } from "@/lib/supabase/server";
@@ -41,7 +43,15 @@ export default async function ChatPage({
 }: {
   searchParams: Promise<{ with?: string }>;
 }) {
+<<<<<<< HEAD
   const resolvedSearchParams = await searchParams;
+=======
+  const resolvedParams = await searchParams;
+  const requestedPartnerId = Array.isArray(resolvedParams.with)
+    ? resolvedParams.with[0]
+    : resolvedParams.with;
+
+>>>>>>> 41d9b06fcd9cdff0d3372e32447054d335f12562
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -75,9 +85,16 @@ export default async function ChatPage({
   const profileMap = new Map((profileData ?? []).map((profile) => [profile.id, profile]));
   const roomMap = new Map((roomData ?? []).map((room) => [room.match_id, room]));
 
+<<<<<<< HEAD
   const selectedPartnerId = resolvedSearchParams.with && profileMap.has(resolvedSearchParams.with)
     ? resolvedSearchParams.with
     : partnerIds[0];
+=======
+  const selectedPartnerId =
+    requestedPartnerId && partnerIds.includes(requestedPartnerId)
+      ? requestedPartnerId
+      : undefined;
+>>>>>>> 41d9b06fcd9cdff0d3372e32447054d335f12562
 
   const selectedMatch = selectedPartnerId
     ? matches.find((match) => getPartnerId(match, user.id) === selectedPartnerId)
@@ -98,7 +115,7 @@ export default async function ChatPage({
       <aside className="w-full rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xl shadow-black/10 lg:max-w-sm">
         <ChatSidebar
           initialPartnerIds={partnerIds}
-          initialProfileMap={profileMap}
+          initialProfiles={profileData ?? []}
           userId={user.id}
           selectedPartnerId={selectedPartnerId}
         />
@@ -122,6 +139,7 @@ export default async function ChatPage({
             </div>
 
             <ChatTimeline
+              key={selectedRoom.id}
               roomId={selectedRoom.id}
               currentUserId={user.id}
               initialMessages={messageData ?? []}
