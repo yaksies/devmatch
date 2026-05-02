@@ -28,6 +28,11 @@ export default function HomeScreen() {
           </Pressable>
         </Link>
       </View>
+      <Link href={"/auth" as any} asChild>
+        <Pressable style={styles.authButton}>
+          <Text style={styles.authButtonText}>Log in / Sign up</Text>
+        </Pressable>
+      </Link>
     </ScrollView>
   );
 }
@@ -78,4 +83,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryText: { color: "#f4f4f5", fontWeight: "600", fontSize: 16 },
+  authButton: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "rgba(124,58,237,0.35)",
+    backgroundColor: "rgba(124,58,237,0.12)",
+    paddingVertical: 14,
+    borderRadius: 999,
+    alignItems: "center",
+  },
+  authButtonText: { color: "#e9d5ff", fontWeight: "700", fontSize: 16 },
 });
