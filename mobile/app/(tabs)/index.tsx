@@ -95,8 +95,9 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0c0c0f" },
   scroll: {
-    padding: 24,
-    paddingTop: 16,
+    padding: 28,
+    paddingTop: 24,
+    paddingBottom: 48,
     maxWidth: 520,
     width: "100%",
     alignSelf: "center",
