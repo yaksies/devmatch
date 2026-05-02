@@ -9,7 +9,7 @@ type HackathonEvent = {
   location: string;
   image?: string;
   url: string;
-  source: "devpost" | "mlh" | "other";
+  source: "devpost" | "mlh" | "other" | "luma";
   description?: string;
 };
 
@@ -175,7 +175,7 @@ export function EventsFeed() {
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
                   <div className="absolute left-4 top-4 inline-flex rounded-full bg-black/35 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-white backdrop-blur-sm">
-                    {event.source === "mlh" ? "MLH" : event.source === "devpost" ? "Devpost" : "Event"}
+                    {event.source === "mlh" ? "MLH" : event.source === "devpost" ? "Devpost" : event.source === "luma" ? "Luma" : "Event"}
                   </div>
                 </div>
 

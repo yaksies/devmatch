@@ -33,7 +33,7 @@ export function PassedCard({ profile }: { profile: Profile }) {
     >
       <button
         onClick={handleRetake}
-        className="absolute right-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--muted)] opacity-0 transition-all hover:bg-rose-500/15 hover:text-rose-300 focus-visible:opacity-100 group-hover:opacity-100"
+        className="absolute right-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--muted)] opacity-100 sm:opacity-0 transition-all hover:bg-rose-500/15 hover:text-rose-300 sm:focus-visible:opacity-100 sm:group-hover:opacity-100"
         aria-label={`Retake swipe for ${profile.display_name ?? "this profile"}`}
         title="Retake swipe"
       >

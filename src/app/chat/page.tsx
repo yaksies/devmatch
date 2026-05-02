@@ -39,8 +39,9 @@ function getPartnerId(match: MatchRow, userId: string) {
 export default async function ChatPage({
   searchParams,
 }: {
-  searchParams: { with?: string };
+  searchParams: Promise<{ with?: string }>;
 }) {
+  const resolvedSearchParams = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -74,8 +75,8 @@ export default async function ChatPage({
   const profileMap = new Map((profileData ?? []).map((profile) => [profile.id, profile]));
   const roomMap = new Map((roomData ?? []).map((room) => [room.match_id, room]));
 
-  const selectedPartnerId = searchParams.with && profileMap.has(searchParams.with)
-    ? searchParams.with
+  const selectedPartnerId = resolvedSearchParams.with && profileMap.has(resolvedSearchParams.with)
+    ? resolvedSearchParams.with
     : partnerIds[0];
 
   const selectedMatch = selectedPartnerId

@@ -61,6 +61,10 @@ function RootLayoutNav() {
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="user/[id]" options={{ headerShown: false, presentation: 'card' }} />
+          <Stack.Screen name="accepted" options={{ headerShown: false, presentation: 'card' }} />
+          <Stack.Screen name="passed" options={{ headerShown: false, presentation: 'card' }} />
+          <Stack.Screen name="auth" options={{ headerShown: false, presentation: 'modal' }} />
         </Stack>
       </ThemeProvider>
     </SafeAreaProvider>
